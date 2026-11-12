@@ -1,29 +1,29 @@
 /**
  * ============================================================================
- * IEEE PES DIU SBC - EEE Fest 2026
- * HIGH-PERFORMANCE WIRE BUZZ GAME CONTROLLER
- * Target: ESP32-S3 N16R8 (Dual Core Xtensa LX7, 16MB Flash, 8MB PSRAM)
+ * EEE Fest 2026 - Wire Buzz Game Controller (Direct Wire Mode)
+ * Organized by IEEE PES DIU SBC
+ * 
+ * Direct Wire Configuration (NO Resistors, NO Capacitors - Wires Only!):
+ * - Bent Wire Track : Connected directly to ESP32 GND
+ * - Player Wand/Loop: Connected directly to ESP32 GPIO 4 (Internal INPUT_PULLUP)
+ * - Finish Line Pad : Connected directly to ESP32 GPIO 6 (Internal INPUT_PULLUP)
+ * - Buzzer          : Connected directly to ESP32 GPIO 7 (+) and GND (-)
  * ============================================================================
  */
 
 #include <Arduino.h>
 
-// ======================== HARDWARE PIN DEFINITIONS ==========================
-// Safe pins on ESP32-S3 (Avoiding GPIO 26-32 reserved for Octal Flash/PSRAM!)
-static const uint8_t PIN_WIRE_TOUCH   = 4;   // Player Wand loop & Wire Track (Active LOW)
-static const uint8_t PIN_START_PAD    = 5;   // Start line touch pad / gate (Active LOW)
-static const uint8_t PIN_FINISH_PAD   = 6;   // Finish line touch pad / gate (Active LOW)
-static const uint8_t PIN_BUZZER       = 7;   // Buzzer output (PWM or Digital High)
-static const uint8_t PIN_STATUS_LED   = 8;   // Visual Game Status LED
-static const uint8_t PIN_RGB_DATA     = 48;  // On-board WS2812 RGB LED (DevKitC-1)
+// Direct-wire pin definitions
+static const uint8_t PIN_WIRE_TOUCH = 4;  // Loop wand (Active LOW against grounded track)
+static const uint8_t PIN_FINISH_PAD = 6;  // Finish line gate (Active LOW against grounded track/wand)
+static const uint8_t PIN_BUZZER     = 7;  // Buzzer output (PWM or Active High)
+static const uint8_t PIN_STATUS_LED = 8;  // Visual Indicator
 
-// ======================= PWM CONFIGURATION FOR BUZZER ========================
-static const uint8_t  BUZZER_PWM_CHANNEL   = 0;
-static const uint32_t BUZZER_PWM_FREQ      = 2000;
-static const uint8_t  BUZZER_PWM_RES       = 8;   // 8-bit resolution (0-255)
-static const bool     USE_TONE_PWM         = true; // True for passive tone buzzer
+// PWM configuration for Buzzer
+static const uint8_t  BUZZER_PWM_CHANNEL = 0;
+static const uint32_t BUZZER_PWM_FREQ    = 2400;
+static const uint8_t  BUZZER_PWM_RES     = 8;
 
-// ============================= GAME STATE ENUM ===============================
 enum GameState {
   STATE_IDLE = 0,
   STATE_COUNTDOWN,
@@ -32,104 +32,66 @@ enum GameState {
   STATE_FINISHED
 };
 
-// ============================= GAME MODES ====================================
-// Mode 1: Sudden Death (One touch = immediate Game Over & time recorded)
-// Mode 2: Precision Multi-Touch (Counts touches + total time, computes score)
 enum GameMode {
-  MODE_SUDDEN_DEATH = 1,
-  MODE_MULTI_TOUCH  = 2
+  MODE_SUDDEN_DEATH = 1, // 1 touch = immediate Game Over
+  MODE_MULTI_TOUCH  = 2  // Counts touches + time, generates score
 };
 
-// ========================== STATE VARIABLES ==================================
-volatile GameState  currentState      = STATE_IDLE;
-volatile GameMode   currentMode       = MODE_SUDDEN_DEATH;
-volatile uint32_t   gameStartTime     = 0;
-volatile uint32_t   gameEndTime       = 0;
-volatile uint32_t   totalTouchCount   = 0;
-volatile uint32_t   lastTouchTime     = 0;
-volatile uint32_t   touchDebounceMs   = 40;  // High performance anti-chatter filter
-volatile bool       isCurrentlyTouching = false;
-volatile uint32_t   currentTouchStartMs = 0;
-volatile uint32_t   totalTouchDurationMs = 0;
+volatile GameState currentState       = STATE_IDLE;
+volatile GameMode  currentMode        = MODE_SUDDEN_DEATH;
+volatile uint32_t  gameStartTime      = 0;
+volatile uint32_t  gameEndTime        = 0;
+volatile uint32_t  totalTouchCount    = 0;
+volatile uint32_t  lastTouchDebounce  = 0;
+volatile bool      isCurrentlyTouching = false;
 
-String currentPlayerName = "Guest";
-String currentPlayerId   = "000-00-0000";
+String currentPlayerName = "Ready Player";
+String currentPlayerId   = "231-15-0000";
 
 uint32_t lastHeartbeatTime = 0;
 uint32_t buzzerOffTime     = 0;
 bool     buzzerActive      = false;
 
-// ========================= BUZZER HELPER FUNCTIONS ===========================
-void buzzerTone(uint32_t freq, uint32_t durationMs = 0) {
-  if (freq == 0) {
-    ledcWriteTone(BUZZER_PWM_CHANNEL, 0);
-    digitalWrite(PIN_BUZZER, LOW);
-    buzzerActive = false;
-    return;
-  }
-  
+// Buzzer Controller (Supports both Active 3.3V/5V buzzers and Passive tone buzzers)
+void buzzerOn(uint32_t freq = 2400, uint32_t durationMs = 0) {
   ledcWriteTone(BUZZER_PWM_CHANNEL, freq);
+  digitalWrite(PIN_BUZZER, HIGH);
   buzzerActive = true;
-  if (durationMs > 0) {
-    buzzerOffTime = millis() + durationMs;
-  } else {
-    buzzerOffTime = 0;
+  buzzerOffTime = (durationMs > 0) ? (millis() + durationMs) : 0;
+}
+
+void buzzerOff() {
+  ledcWriteTone(BUZZER_PWM_CHANNEL, 0);
+  digitalWrite(PIN_BUZZER, LOW);
+  buzzerActive = false;
+  buzzerOffTime = 0;
+}
+
+void playSfx(const char* sfx) {
+  if (strcmp(sfx, "FAIL") == 0) {
+    buzzerOn(320); delay(150);
+    buzzerOn(250); delay(150);
+    buzzerOn(180); delay(220);
+    buzzerOn(120); delay(380);
+    buzzerOff();
+  } else if (strcmp(sfx, "WIN") == 0) {
+    buzzerOn(523); delay(100);
+    buzzerOn(659); delay(100);
+    buzzerOn(784); delay(100);
+    buzzerOn(1046); delay(350);
+    buzzerOff();
+  } else if (strcmp(sfx, "START") == 0) {
+    buzzerOn(880, 180);
+  } else if (strcmp(sfx, "TOUCH") == 0) {
+    buzzerOn(2600, 150);
   }
 }
 
-void buzzerStop() {
-  buzzerTone(0);
-}
-
-void playBuzzerPattern(const char* pattern) {
-  if (strcmp(pattern, "FAIL") == 0) {
-    // Funny descending game over buzz
-    buzzerTone(350); delay(120);
-    buzzerTone(280); delay(120);
-    buzzerTone(200); delay(200);
-    buzzerTone(130); delay(350);
-    buzzerStop();
-  } else if (strcmp(pattern, "WIN") == 0) {
-    // Victorious fanfare
-    buzzerTone(523); delay(100); // C5
-    buzzerTone(659); delay(100); // E5
-    buzzerTone(784); delay(100); // G5
-    buzzerTone(1046); delay(300); // C6
-    buzzerStop();
-  } else if (strcmp(pattern, "START") == 0) {
-    buzzerTone(880, 150);
-  } else if (strcmp(pattern, "TICK") == 0) {
-    buzzerTone(440, 80);
-  }
-}
-
-// ======================== HARDWARE INTERRUPT HANDLERS =======================
-void IRAM_ATTR onWireTouchISR() {
-  // Ultra-fast ISR detection
-  uint32_t now = millis();
-  int pinVal = digitalRead(PIN_WIRE_TOUCH);
-
-  if (pinVal == LOW) {
-    // Touch closed (GND to Wand)
-    if (!isCurrentlyTouching && (now - lastTouchTime >= touchDebounceMs)) {
-      isCurrentlyTouching = true;
-      lastTouchTime = now;
-      currentTouchStartMs = now;
-    }
-  } else {
-    // Touch released (Open circuit)
-    if (isCurrentlyTouching) {
-      isCurrentlyTouching = false;
-      totalTouchDurationMs += (now - currentTouchStartMs);
-    }
-  }
-}
-
-// ============================ SERIAL PROTOCOL ================================
-void sendJsonEvent(const String& event, const String& extraJson = "") {
+// JSON Serial Output
+void sendJson(const String& event, const String& extra = "") {
   String out = "{\"event\":\"" + event + "\"";
-  if (extraJson.length() > 0) {
-    out += "," + extraJson;
+  if (extra.length() > 0) {
+    out += "," + extra;
   }
   out += "}";
   Serial.println(out);
@@ -149,29 +111,28 @@ void sendStatus() {
   extra += ",\"touches\":" + String(totalTouchCount);
   extra += ",\"elapsed_ms\":" + String(elapsed);
   extra += ",\"player\":\"" + currentPlayerName + "\"";
-  sendJsonEvent("STATUS", extra);
+  sendJson("STATUS", extra);
 }
 
-// ============================ GAME LOGIC =====================================
-void startGame(GameMode mode, const String& player = "Guest", const String& studentId = "") {
+void startGame(GameMode mode, const String& player = "Player", const String& studentId = "") {
   currentMode = mode;
   currentPlayerName = player;
   currentPlayerId = studentId;
   totalTouchCount = 0;
-  totalTouchDurationMs = 0;
   isCurrentlyTouching = false;
+  lastTouchDebounce = millis();
   gameStartTime = millis();
   gameEndTime = 0;
   currentState = STATE_PLAYING;
   digitalWrite(PIN_STATUS_LED, HIGH);
 
-  playBuzzerPattern("START");
+  playSfx("START");
 
   String extra = "\"mode\":" + String((int)currentMode) +
                  ",\"player\":\"" + currentPlayerName + "\"" +
                  ",\"student_id\":\"" + currentPlayerId + "\"" +
                  ",\"time_ms\":0";
-  sendJsonEvent("START", extra);
+  sendJson("START", extra);
 }
 
 void triggerGameOver(const String& reason = "TOUCH") {
@@ -188,9 +149,9 @@ void triggerGameOver(const String& reason = "TOUCH") {
                  ",\"time_ms\":" + String(elapsed) +
                  ",\"player\":\"" + currentPlayerName + "\"" +
                  ",\"student_id\":\"" + currentPlayerId + "\"";
-  sendJsonEvent("GAMEOVER", extra);
+  sendJson("GAMEOVER", extra);
 
-  playBuzzerPattern("FAIL");
+  playSfx("FAIL");
 }
 
 void triggerFinish() {
@@ -200,90 +161,78 @@ void triggerFinish() {
   digitalWrite(PIN_STATUS_LED, LOW);
 
   uint32_t elapsed = gameEndTime - gameStartTime;
-  
-  // Scoring algorithm for Mode 2:
-  // Base 10,000 pts - (500 pts per touch) - (time_ms / 10)
-  int32_t calculatedScore = 10000 - ((int32_t)totalTouchCount * 500) - ((int32_t)elapsed / 10);
-  if (calculatedScore < 0) calculatedScore = 0;
+  int32_t score = 10000 - ((int32_t)totalTouchCount * 500) - ((int32_t)elapsed / 10);
+  if (score < 0) score = 0;
 
   String extra = "\"mode\":" + String((int)currentMode) +
                  ",\"touches\":" + String(totalTouchCount) +
                  ",\"time_ms\":" + String(elapsed) +
-                 ",\"score\":" + String(calculatedScore) +
+                 ",\"score\":" + String(score) +
                  ",\"player\":\"" + currentPlayerName + "\"" +
                  ",\"student_id\":\"" + currentPlayerId + "\"";
-  sendJsonEvent("FINISH", extra);
+  sendJson("FINISH", extra);
 
-  playBuzzerPattern("WIN");
+  playSfx("WIN");
 }
 
 void resetGame() {
   currentState = STATE_IDLE;
   totalTouchCount = 0;
-  totalTouchDurationMs = 0;
   isCurrentlyTouching = false;
   gameStartTime = 0;
   gameEndTime = 0;
-  buzzerStop();
+  buzzerOff();
   digitalWrite(PIN_STATUS_LED, LOW);
-  sendJsonEvent("RESET", "\"state\":\"IDLE\"");
+  sendJson("RESET", "\"state\":\"IDLE\"");
 }
 
-// ======================== COMMAND PARSER =====================================
 void parseSerialCommand(String cmd) {
   cmd.trim();
   if (cmd.length() == 0) return;
 
   if (cmd.equalsIgnoreCase("PING")) {
-    sendJsonEvent("PONG", "\"uptime_ms\":" + String(millis()));
+    sendJson("PONG", "\"uptime_ms\":" + String(millis()));
     return;
   }
-
   if (cmd.equalsIgnoreCase("STATUS")) {
     sendStatus();
     return;
   }
-
   if (cmd.equalsIgnoreCase("RESET")) {
     resetGame();
     return;
   }
-
   if (cmd.startsWith("SET_MODE")) {
     int m = cmd.substring(8).toInt();
     if (m == 1 || m == 2) {
       currentMode = (GameMode)m;
-      sendJsonEvent("MODE_CHANGED", "\"mode\":" + String(m));
+      sendJson("MODE_CHANGED", "\"mode\":" + String(m));
     }
     return;
   }
-
   if (cmd.startsWith("BUZZ")) {
     int dur = cmd.substring(4).toInt();
-    if (dur <= 0) dur = 300;
-    buzzerTone(2000, dur);
-    sendJsonEvent("BUZZ_TEST", "\"duration_ms\":" + String(dur));
+    if (dur <= 0) dur = 250;
+    buzzerOn(2400, dur);
+    sendJson("BUZZ_TEST", "\"duration_ms\":" + String(dur));
     return;
   }
-
   if (cmd.startsWith("START")) {
-    // Format: START [mode] [name] [id]
     int modeNum = (int)currentMode;
-    String pName = "Guest";
+    String pName = "Player";
     String pId = "";
-
-    int firstSpace = cmd.indexOf(' ');
-    if (firstSpace > 0) {
-      String rest = cmd.substring(firstSpace + 1);
-      int secondSpace = rest.indexOf(' ');
-      if (secondSpace > 0) {
-        modeNum = rest.substring(0, secondSpace).toInt();
+    int s1 = cmd.indexOf(' ');
+    if (s1 > 0) {
+      String rest = cmd.substring(s1 + 1);
+      int s2 = rest.indexOf(' ');
+      if (s2 > 0) {
+        modeNum = rest.substring(0, s2).toInt();
         if (modeNum != 1 && modeNum != 2) modeNum = 1;
-        String playerPart = rest.substring(secondSpace + 1);
-        int thirdSpace = playerPart.indexOf(' ');
-        if (thirdSpace > 0) {
-          pName = playerPart.substring(0, thirdSpace);
-          pId = playerPart.substring(thirdSpace + 1);
+        String playerPart = rest.substring(s2 + 1);
+        int s3 = playerPart.indexOf(' ');
+        if (s3 > 0) {
+          pName = playerPart.substring(0, s3);
+          pId = playerPart.substring(s3 + 1);
         } else {
           pName = playerPart;
         }
@@ -296,31 +245,27 @@ void parseSerialCommand(String cmd) {
     startGame((GameMode)modeNum, pName, pId);
     return;
   }
-
   if (cmd.equalsIgnoreCase("STOP")) {
     triggerGameOver("STOPPED_BY_ADMIN");
     return;
   }
-
   if (cmd.equalsIgnoreCase("FINISH")) {
     triggerFinish();
     return;
   }
 
-  // JSON parsing fallback
+  // JSON commands
   if (cmd.startsWith("{") && cmd.endsWith("}")) {
     if (cmd.indexOf("\"cmd\":\"START\"") >= 0 || cmd.indexOf("\"cmd\": \"START\"") >= 0) {
       GameMode m = currentMode;
       if (cmd.indexOf("\"mode\":1") >= 0) m = MODE_SUDDEN_DEATH;
       else if (cmd.indexOf("\"mode\":2") >= 0) m = MODE_MULTI_TOUCH;
-      
-      String p = "Guest";
+      String p = "Player";
       int pIdx = cmd.indexOf("\"player\":\"");
       if (pIdx >= 0) {
         int endP = cmd.indexOf("\"", pIdx + 10);
         if (endP > 0) p = cmd.substring(pIdx + 10, endP);
       }
-
       String id = "";
       int idIdx = cmd.indexOf("\"student_id\":\"");
       if (idIdx >= 0) {
@@ -330,66 +275,41 @@ void parseSerialCommand(String cmd) {
       startGame(m, p, id);
       return;
     }
-
-    if (cmd.indexOf("\"cmd\":\"RESET\"") >= 0) {
-      resetGame();
-      return;
-    }
-
-    if (cmd.indexOf("\"cmd\":\"FINISH\"") >= 0) {
-      triggerFinish();
-      return;
-    }
-
-    if (cmd.indexOf("\"cmd\":\"STOP\"") >= 0) {
-      triggerGameOver("STOPPED_BY_ADMIN");
-      return;
-    }
-
+    if (cmd.indexOf("\"cmd\":\"RESET\"") >= 0) { resetGame(); return; }
+    if (cmd.indexOf("\"cmd\":\"FINISH\"") >= 0) { triggerFinish(); return; }
+    if (cmd.indexOf("\"cmd\":\"STOP\"") >= 0) { triggerGameOver("STOPPED_BY_ADMIN"); return; }
     if (cmd.indexOf("\"cmd\":\"SET_MODE\"") >= 0) {
       if (cmd.indexOf("\"mode\":1") >= 0) currentMode = MODE_SUDDEN_DEATH;
       else if (cmd.indexOf("\"mode\":2") >= 0) currentMode = MODE_MULTI_TOUCH;
-      sendJsonEvent("MODE_CHANGED", "\"mode\":" + String((int)currentMode));
+      sendJson("MODE_CHANGED", "\"mode\":" + String((int)currentMode));
       return;
     }
   }
 }
 
-// ============================ ARDUINO SETUP ==================================
 void setup() {
   Serial.begin(115200);
-  
-  // Wait briefly for serial initialization on ESP32-S3
-  delay(500);
+  delay(400);
 
-  // Configure Inputs with Internal Pull-Ups for active-low grounding
+  // Direct Wire Setup: Enable ESP32 Internal Pull-Up Resistors
   pinMode(PIN_WIRE_TOUCH, INPUT_PULLUP);
-  pinMode(PIN_START_PAD, INPUT_PULLUP);
   pinMode(PIN_FINISH_PAD, INPUT_PULLUP);
 
-  // Configure Outputs
+  // Output setup
   pinMode(PIN_STATUS_LED, OUTPUT);
+  pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_STATUS_LED, LOW);
+  digitalWrite(PIN_BUZZER, LOW);
 
-  // Configure PWM Buzzer Channel
+  // Initialize Buzzer PWM
   ledcSetup(BUZZER_PWM_CHANNEL, BUZZER_PWM_FREQ, BUZZER_PWM_RES);
   ledcAttachPin(PIN_BUZZER, BUZZER_PWM_CHANNEL);
-  buzzerStop();
+  buzzerOff();
 
-  // Attach Interrupt for Touch Sensor (Both Falling and Rising for duration tracking)
-  attachInterrupt(digitalPinToInterrupt(PIN_WIRE_TOUCH), onWireTouchISR, CHANGE);
-
-  // Welcome Boot Sign-off
-  String bootMsg = "\"device\":\"ESP32-S3-WIRE-BUZZ\","
-                   "\"version\":\"2.0.0\","
-                   "\"board\":\"ESP32-S3-N16R8\","
-                   "\"org\":\"IEEE PES DIU SBC\","
-                   "\"event_name\":\"EEE Fest 2026\","
-                   "\"state\":\"READY\"";
-  sendJsonEvent("READY", bootMsg);
+  // Boot announcement
+  sendJson("READY", "\"device\":\"ESP32-S3-WIRE-BUZZ\",\"mode\":\"DIRECT_WIRE\",\"touch_pin\":4,\"finish_pin\":6,\"buzzer_pin\":7");
 }
 
-// ============================ ARDUINO LOOP ===================================
 void loop() {
   uint32_t now = millis();
 
@@ -399,57 +319,58 @@ void loop() {
     parseSerialCommand(line);
   }
 
-  // 2. Timed Buzzer Turn-off
+  // 2. Timed Buzzer Turn-Off
   if (buzzerActive && buzzerOffTime > 0 && now >= buzzerOffTime) {
-    buzzerStop();
+    buzzerOff();
   }
 
-  // 3. Touch Handling during Active Game
-  static bool lastTouchReportState = false;
+  // 3. Game Play Direct Wire Touch Detection
   if (currentState == STATE_PLAYING) {
-    // If hardware ISR detected touch
-    if (isCurrentlyTouching) {
-      if (!lastTouchReportState) {
-        lastTouchReportState = true;
+    // Read raw wire state: Bent wire is GND, loop wand is GPIO 4 (INPUT_PULLUP)
+    int touchState = digitalRead(PIN_WIRE_TOUCH);
+
+    if (touchState == LOW) {
+      // Wand touches the grounded wire!
+      if (!isCurrentlyTouching && (now - lastTouchDebounce >= 45)) {
+        isCurrentlyTouching = true;
+        lastTouchDebounce = now;
         totalTouchCount++;
 
         uint32_t elapsed = now - gameStartTime;
 
-        // In Mode 1: Instant Sudden Death!
         if (currentMode == MODE_SUDDEN_DEATH) {
           triggerGameOver("TOUCH");
         } else {
-          // Mode 2: Multi-Touch counter + momentary buzzer alert
-          buzzerTone(2500, 150); // Sharp buzz
-          String touchMsg = "\"count\":" + String(totalTouchCount) +
-                            ",\"time_ms\":" + String(elapsed) +
-                            ",\"mode\":2";
-          sendJsonEvent("TOUCH", touchMsg);
+          // Mode 2: Multi-Touch alert
+          buzzerOn(2400, 160);
+          sendJson("TOUCH", "\"count\":" + String(totalTouchCount) + ",\"time_ms\":" + String(elapsed) + ",\"mode\":2");
         }
       }
     } else {
-      lastTouchReportState = false;
+      // Wand released
+      if (isCurrentlyTouching && (now - lastTouchDebounce >= 30)) {
+        isCurrentlyTouching = false;
+      }
     }
 
-    // Check Finish Pad contact (Active LOW)
+    // Check Finish Line Contact on GPIO 6 (Active LOW)
     if (digitalRead(PIN_FINISH_PAD) == LOW) {
-      delay(20); // Quick debounce
+      delay(15); // Confirm contact
       if (digitalRead(PIN_FINISH_PAD) == LOW) {
         triggerFinish();
       }
     }
   }
 
-  // 4. Heartbeat Broadcast every 2000ms
+  // 4. Heartbeat every 2000ms
   if (now - lastHeartbeatTime >= 2000) {
     lastHeartbeatTime = now;
     if (currentState == STATE_IDLE) {
-      sendJsonEvent("HEARTBEAT", "\"status\":\"IDLE\",\"mode\":" + String((int)currentMode));
+      sendJson("HEARTBEAT", "\"status\":\"IDLE\",\"mode\":" + String((int)currentMode));
     } else if (currentState == STATE_PLAYING) {
       sendStatus();
     }
   }
 
-  // Yield to RTOS watchdog
-  delay(5);
+  delay(4);
 }
