@@ -16,7 +16,7 @@
         <div class="fest-logos">
           <img src="assets/eee-fest-logo.png" alt="EEE Fest 2026" class="fest-brand-logo">
           <div class="fest-brand-divider"></div>
-          <img src="assets/ieee-pes-diu-logo.png" alt="IEEE PES DIU SBC" class="fest-brand-logo">
+          <img src="assets/ieee-pes-diu-logo.png" alt="IEEE PES DIU SBC" class="fest-brand-logo pes-logo">
         </div>
 
         <div class="fest-title-text">
@@ -30,6 +30,10 @@
           <span id="cloudSyncDot" class="pulse-dot"></span>
           <span id="cloudSyncText">Cloud Live</span>
         </div>
+
+        <button type="button" id="wipeAllDataBtn" class="fest-action-btn danger-outline-btn" style="border:1px solid #ff1744;color:#ff5252;font-weight:800;background:rgba(255,23,68,0.08)" title="Permanently wipe all queue, match history, and stage data">
+          🚨 Reset Arena (Zero)
+        </button>
 
         <a href="index.html" target="_blank" class="fest-action-btn gold-btn">
           Open Presenter View ↗
@@ -115,6 +119,9 @@
             </button>
             <button type="button" id="adminResetBtn" class="fest-ctrl-btn dark-ctrl">
               🔄 Reset Stage
+            </button>
+            <button type="button" id="adminClearStageBtn" class="fest-ctrl-btn danger-ctrl" style="background:rgba(255,23,68,0.12);border:1px solid #ff1744;color:#ff5252" title="Clear current contestant from stage">
+              🗑 Clear Stage
             </button>
             <button type="button" id="adminNextPlayerBtn" class="fest-ctrl-btn cyan-ctrl">
               ⏩ Advance to Next

@@ -83,40 +83,21 @@
       // 1. Live State Listener (Queue, Active Player, Mode)
       const stateRef = this.db.ref('wirebuzz/liveState');
       stateRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && window.gameState) {
-          let stateChanged = false;
-
-          if (Array.isArray(data.queue)) {
-            window.gameState.state.queue = data.queue;
-            stateChanged = true;
-          } else if (data.queue === null || data.queue === undefined) {
-            // empty queue
-            if (window.gameState.state.queue.length > 0) {
-              window.gameState.state.queue = [];
-              stateChanged = true;
-            }
-          }
-
+        const data = snapshot.val() || {};
+        if (window.gameState) {
+          window.gameState.state.queue = Array.isArray(data.queue) ? data.queue : [];
           if (data.activePlayer !== undefined) {
             window.gameState.state.activePlayer = data.activePlayer;
-            stateChanged = true;
           }
-
           if (data.mode && (data.mode === 1 || data.mode === 2)) {
-            if (window.gameState.state.mode !== data.mode) {
-              window.gameState.state.mode = data.mode;
-              window.gameState.emit('MODE_CHANGED', { mode: data.mode });
-              stateChanged = true;
-            }
+            window.gameState.state.mode = data.mode;
+            window.gameState.emit('MODE_CHANGED', { mode: data.mode });
           }
 
-          if (stateChanged) {
-            window.gameState.saveToStorage();
-            window.gameState.emit('QUEUE_UPDATED', { queue: window.gameState.state.queue });
-            window.gameState.emit('ACTIVE_PLAYER_CHANGED', { player: window.gameState.state.activePlayer });
-            window.gameState.emit('state_changed', window.gameState.state);
-          }
+          window.gameState.saveToStorage();
+          window.gameState.emit('QUEUE_UPDATED', { queue: window.gameState.state.queue });
+          window.gameState.emit('ACTIVE_PLAYER_CHANGED', { player: window.gameState.state.activePlayer });
+          window.gameState.emit('state_changed', window.gameState.state);
         }
       }, (err) => {
         console.warn('[Firebase] liveState read notice:', err.message);
@@ -133,11 +114,14 @@
             records.sort((a, b) => (b.timestampRaw || 0) - (a.timestampRaw || 0));
             window.gameState.state.matchHistory = records;
           } else {
-            // No records in cloud
+            // When cleared in cloud, reset matchHistory to empty array immediately!
+            window.gameState.state.matchHistory = [];
           }
           window.gameState.saveToStorage();
           window.gameState.emit('state_changed', window.gameState.state);
           window.gameState.emit('MATCH_FINISHED', {});
+          window.gameState.emit('MATCH_HISTORY_CLEARED', {});
+          window.gameState.emit('MATCH_RECORD_DELETED', {});
         }
       }, (err) => {
         console.warn('[Firebase] matchHistory read notice:', err.message);
@@ -170,7 +154,24 @@
     handleRemoteEvent(type, payload) {
       if (!type || !window.gameState) return;
       console.log('[Firebase Event Received]:', type, payload);
-      window.gameState.emit(type, payload);
+
+      if (type === 'FACTORY_RESET_ALL_DATA') {
+        window.gameState.state.matchHistory = [];
+        window.gameState.state.queue = [];
+        window.gameState.state.activePlayer = null;
+        window.gameState.state.totalRegistrationsCount = 0;
+        window.gameState.saveToStorage();
+        window.gameState.emit('FACTORY_RESET_ALL_DATA', {});
+        window.gameState.emit('QUEUE_UPDATED', { queue: [] });
+        window.gameState.emit('ACTIVE_PLAYER_CHANGED', { player: null });
+        window.gameState.emit('MATCH_HISTORY_CLEARED', {});
+        window.gameState.emit('MATCH_RECORD_DELETED', {});
+        window.gameState.emit('REGISTRATIONS_UPDATED', { count: 0 });
+        window.gameState.emit('state_changed', window.gameState.state);
+      } else {
+        window.gameState.emit(type, payload);
+      }
+
       if (this.localBroadcastChannel) {
         this.localBroadcastChannel.postMessage({ type, payload });
       }
@@ -215,6 +216,13 @@
     }
 
     /**
+     * Compatibility alias for state.js calls
+     */
+    broadcastCurrentState() {
+      return this.syncCurrentQueue();
+    }
+
+    /**
      * Push current local queue & stage state to Firebase
      */
     async syncCurrentQueue() {
@@ -254,6 +262,7 @@
       if (!this.db || !id) return;
       try {
         await this.db.ref(`wirebuzz/matchHistory/${id}`).remove();
+        await this.sendRemoteEvent('MATCH_RECORD_DELETED', { id });
       } catch (err) {
         console.warn('[Firebase] deleteMatchRecord error:', err.message);
       }
@@ -265,9 +274,44 @@
     async clearMatchHistory() {
       if (!this.db) return;
       try {
-        await this.db.ref('wirebuzz/matchHistory').remove();
+        await this.db.ref('wirebuzz/matchHistory').set(null);
+        await this.sendRemoteEvent('MATCH_HISTORY_CLEARED', {});
       } catch (err) {
         console.warn('[Firebase] clearMatchHistory error:', err.message);
+      }
+    }
+
+    /**
+     * Complete wipe of all Arena data across all devices
+     */
+    async wipeAllData() {
+      if (window.gameState) {
+        window.gameState.state.matchHistory = [];
+        window.gameState.state.queue = [];
+        window.gameState.state.activePlayer = null;
+        window.gameState.state.totalRegistrationsCount = 0;
+        window.gameState.saveToStorage();
+        window.gameState.emit('FACTORY_RESET_ALL_DATA', {});
+        window.gameState.emit('QUEUE_UPDATED', { queue: [] });
+        window.gameState.emit('ACTIVE_PLAYER_CHANGED', { player: null });
+        window.gameState.emit('MATCH_HISTORY_CLEARED', {});
+        window.gameState.emit('MATCH_RECORD_DELETED', {});
+        window.gameState.emit('REGISTRATIONS_UPDATED', { count: 0 });
+        window.gameState.emit('state_changed', window.gameState.state);
+      }
+      if (!this.db) return;
+      try {
+        await this.db.ref('wirebuzz/matchHistory').set(null);
+        await this.db.ref('wirebuzz/registeredParticipants').set(null);
+        await this.db.ref('wirebuzz/liveState').set({
+          queue: [],
+          activePlayer: null,
+          mode: 1,
+          updatedAt: Date.now()
+        });
+        await this.sendRemoteEvent('FACTORY_RESET_ALL_DATA', { timestamp: Date.now() });
+      } catch (err) {
+        console.warn('[Firebase] wipeAllData error:', err.message);
       }
     }
 

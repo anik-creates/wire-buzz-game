@@ -64,6 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let elapsedMs = 0;
   let animationFrameId = null;
 
+  // Active Stage Timers
+  let intermissionInterval = null;
+  let gameOverTimeout = null;
+  let victoryTimeout = null;
+  let countdownInterval = null;
+
   // Real-time Clock
   setInterval(() => {
     const now = new Date();
@@ -314,7 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
     countdownNumber.textContent = count;
     sound.playCountdown(count);
 
-    const interval = setInterval(() => {
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
       count--;
       if (count > 0) {
         countdownNumber.textContent = count;
@@ -323,7 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
         countdownNumber.textContent = "GO!";
         sound.playCountdown('GO');
       } else {
-        clearInterval(interval);
+        clearInterval(countdownInterval);
+        countdownInterval = null;
         countdownOverlay.style.display = 'none';
         launchGame();
       }
@@ -394,7 +402,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gameoverOverlay.style.display = 'flex';
 
-    setTimeout(() => {
+    if (gameOverTimeout) clearTimeout(gameOverTimeout);
+    gameOverTimeout = setTimeout(() => {
+      gameOverTimeout = null;
       gameoverOverlay.style.display = 'none';
       showIntermissionLeaderboard();
     }, 4500);
@@ -433,7 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     victoryOverlay.style.display = 'flex';
 
-    setTimeout(() => {
+    if (victoryTimeout) clearTimeout(victoryTimeout);
+    victoryTimeout = setTimeout(() => {
+      victoryTimeout = null;
       stopConfetti();
       victoryOverlay.style.display = 'none';
       showIntermissionLeaderboard();
@@ -452,12 +464,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const countdownBar = document.getElementById('intermissionCountdown');
     if (countdownBar) countdownBar.textContent = `Next player takes the stage in ${remaining}s...`;
 
-    const countdownTimer = setInterval(() => {
+    if (intermissionInterval) clearInterval(intermissionInterval);
+    intermissionInterval = setInterval(() => {
       remaining--;
       if (remaining > 0) {
         if (countdownBar) countdownBar.textContent = `Next player takes the stage in ${remaining}s...`;
       } else {
-        clearInterval(countdownTimer);
+        clearInterval(intermissionInterval);
+        intermissionInterval = null;
         leaderboardOverlay.style.display = 'none';
         
         const nextPlayer = state.advanceToNextPlayer();
@@ -512,6 +526,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function hideAllOverlays() {
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    if (gameOverTimeout) { clearTimeout(gameOverTimeout); gameOverTimeout = null; }
+    if (victoryTimeout) { clearTimeout(victoryTimeout); victoryTimeout = null; }
+    if (intermissionInterval) { clearInterval(intermissionInterval); intermissionInterval = null; }
     countdownOverlay.style.display = 'none';
     gameoverOverlay.style.display = 'none';
     victoryOverlay.style.display = 'none';
@@ -630,6 +648,8 @@ document.addEventListener('DOMContentLoaded', () => {
     resetStopwatch();
     if (touchCounter) touchCounter.textContent = "0";
     renderActivePlayer();
+    renderQueue();
+    renderLeftLeaderboard();
     serial.resetHardwareGame();
   }
 
@@ -855,6 +875,28 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   state.on('MATCH_FINISHED', () => {
+    renderLeftLeaderboard();
+    if (topScorersModal && topScorersModal.style.display === 'flex') {
+      renderTopScorersModal();
+    }
+  });
+
+  state.on('MATCH_RECORD_DELETED', () => {
+    renderLeftLeaderboard();
+    if (topScorersModal && topScorersModal.style.display === 'flex') {
+      renderTopScorersModal();
+    }
+  });
+
+  state.on('MATCH_HISTORY_CLEARED', () => {
+    renderLeftLeaderboard();
+    if (topScorersModal && topScorersModal.style.display === 'flex') {
+      renderTopScorersModal();
+    }
+  });
+
+  state.on('FACTORY_RESET_ALL_DATA', () => {
+    resetStage();
     renderLeftLeaderboard();
     if (topScorersModal && topScorersModal.style.display === 'flex') {
       renderTopScorersModal();

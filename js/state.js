@@ -129,6 +129,8 @@ class GameStateManager {
     if (window.firebaseSync) {
       if (type.startsWith('TRIGGER_')) {
         window.firebaseSync.sendRemoteEvent(type, payload);
+      } else if (type === 'FACTORY_RESET_ALL_DATA') {
+        window.firebaseSync.wipeAllData();
       } else if (type === 'MATCH_FINISHED' && payload && payload.record) {
         window.firebaseSync.recordMatch(payload.record);
       } else if (type === 'MATCH_RECORD_DELETED' && payload && payload.id) {
@@ -172,6 +174,18 @@ class GameStateManager {
         break;
       case 'MATCH_HISTORY_CLEARED':
         this.state.matchHistory = [];
+        break;
+      case 'FACTORY_RESET_ALL_DATA':
+        this.state.matchHistory = [];
+        this.state.queue = [];
+        this.state.activePlayer = null;
+        this.state.totalRegistrationsCount = 0;
+        this.emit('FACTORY_RESET_ALL_DATA', {});
+        this.emit('QUEUE_UPDATED', { queue: [] });
+        this.emit('ACTIVE_PLAYER_CHANGED', { player: null });
+        this.emit('MATCH_HISTORY_CLEARED', {});
+        this.emit('MATCH_RECORD_DELETED', {});
+        this.emit('REGISTRATIONS_UPDATED', { count: 0 });
         break;
       case 'TRIGGER_FINISH':
         this.emit('TRIGGER_FINISH', payload);
@@ -293,8 +307,12 @@ class GameStateManager {
 
   clearQueue() {
     this.state.queue = [];
+    this.saveToStorage();
     this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-    if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+    const sync = window.firebaseSync || window.cloudSync;
+    if (sync && typeof sync.syncCurrentQueue === 'function') {
+      sync.syncCurrentQueue();
+    }
   }
 
   setMode(modeNumber) {
@@ -334,16 +352,56 @@ class GameStateManager {
     return record;
   }
 
+  clearActivePlayer() {
+    this.state.activePlayer = null;
+    this.saveToStorage();
+    this.broadcast('ACTIVE_PLAYER_CHANGED', { player: null });
+    const sync = window.firebaseSync || window.cloudSync;
+    if (sync && typeof sync.syncCurrentQueue === 'function') {
+      sync.syncCurrentQueue();
+    }
+  }
+
+  wipeAllData() {
+    this.state.matchHistory = [];
+    this.state.queue = [];
+    this.state.activePlayer = null;
+    this.state.totalRegistrationsCount = 0;
+    this.saveToStorage();
+    this.emit('FACTORY_RESET_ALL_DATA', {});
+    this.emit('QUEUE_UPDATED', { queue: [] });
+    this.emit('ACTIVE_PLAYER_CHANGED', { player: null });
+    this.emit('MATCH_HISTORY_CLEARED', {});
+    this.emit('MATCH_RECORD_DELETED', {});
+    this.emit('REGISTRATIONS_UPDATED', { count: 0 });
+    this.emit('state_changed', this.state);
+    if (this.channel) {
+      this.channel.postMessage({ type: 'FACTORY_RESET_ALL_DATA', payload: {}, timestamp: Date.now() });
+    }
+    const sync = window.firebaseSync || window.cloudSync;
+    if (sync && typeof sync.wipeAllData === 'function') {
+      sync.wipeAllData();
+    }
+  }
+
   deleteMatchRecord(id) {
     this.state.matchHistory = this.state.matchHistory.filter(m => m.id !== id);
+    this.saveToStorage();
     this.broadcast('MATCH_RECORD_DELETED', { id });
-    if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+    const sync = window.firebaseSync || window.cloudSync;
+    if (sync && typeof sync.deleteMatchRecord === 'function') {
+      sync.deleteMatchRecord(id);
+    }
   }
 
   clearMatchHistory() {
     this.state.matchHistory = [];
+    this.saveToStorage();
     this.broadcast('MATCH_HISTORY_CLEARED', {});
-    if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+    const sync = window.firebaseSync || window.cloudSync;
+    if (sync && typeof sync.clearMatchHistory === 'function') {
+      sync.clearMatchHistory();
+    }
   }
 
   getLeaderboard(mode = null) {

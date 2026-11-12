@@ -28,8 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminStopBtn = document.getElementById('adminStopBtn');
   const adminFinishBtn = document.getElementById('adminFinishBtn');
   const adminResetBtn = document.getElementById('adminResetBtn');
+  const adminClearStageBtn = document.getElementById('adminClearStageBtn');
   const adminNextPlayerBtn = document.getElementById('adminNextPlayerBtn');
   const adminToggleTopScorersBtn = document.getElementById('adminToggleTopScorersBtn');
+  const wipeAllDataBtn = document.getElementById('wipeAllDataBtn');
 
   // DOM Elements - Queue
   const adminQueueList = document.getElementById('adminQueueList');
@@ -120,6 +122,29 @@ document.addEventListener('DOMContentLoaded', () => {
   adminResetBtn.addEventListener('click', () => {
     state.broadcast('TRIGGER_RESET');
   });
+
+  if (adminClearStageBtn) {
+    adminClearStageBtn.addEventListener('click', () => {
+      if (confirm("Clear the current contestant from the active stage?")) {
+        state.clearActivePlayer();
+        renderActivePlayer();
+      }
+    });
+  }
+
+  if (wipeAllDataBtn) {
+    wipeAllDataBtn.addEventListener('click', () => {
+      const confirmText = prompt('🚨 ARE YOU SURE?\nThis will permanently delete all contestants in the queue, match history records, and stage data across all devices!\n\nType "RESET" to confirm:');
+      if (confirmText && confirmText.trim().toUpperCase() === 'RESET') {
+        state.wipeAllData();
+        renderActivePlayer();
+        renderAdminQueue();
+        renderReportsTable();
+        updateAnalyticsSummary();
+        alert('All Arena data has been wiped and reset to zero.');
+      }
+    });
+  }
 
   adminNextPlayerBtn.addEventListener('click', () => {
     state.advanceToNextPlayer();

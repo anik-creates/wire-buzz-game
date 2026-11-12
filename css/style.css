@@ -99,6 +99,15 @@ body.fest-body {
 .fest-brand-logo:hover {
   transform: scale(1.04);
 }
+.fest-brand-logo.pes-logo {
+  height: 68px;
+  max-height: 74px;
+  filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.45));
+}
+.fest-brand-logo.pes-logo:hover {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.75));
+}
 
 .fest-brand-divider {
   width: 1px;
@@ -1626,10 +1635,10 @@ body.fest-body {
 }
 
 .animated-pes-logo {
-  height: 64px;
+  height: 98px;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.45));
+  filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.7));
   animation: pesLogoGlow 1.6s infinite ease-in-out alternate;
   animation-delay: 0.25s;
 }
@@ -2101,4 +2110,40 @@ body.fest-body {
   border-color: var(--fest-gold);
   background: rgba(245, 166, 35, 0.12);
   box-shadow: 0 0 16px rgba(245, 166, 35, 0.25);
+}
+
+/* ==========================================================================
+   LOWER FOOTER LOGO UNDER QR SEGMENT & PES LOGO PROMINENCE
+   ========================================================================== */
+
+.qr-footer-logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0 6px 0;
+  width: 100%;
+}
+
+.qr-footer-logo-img {
+  max-width: 220px;
+  width: 88%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(245, 166, 35, 0.25));
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.qr-footer-logo-img:hover {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 20px rgba(245, 166, 35, 0.5));
+}
+
+.modal-logo-img.pes-logo {
+  height: 60px;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.5));
+}
+
+.mobile-logo-img.pes-logo {
+  height: 62px;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.5));
 }
