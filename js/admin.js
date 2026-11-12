@@ -1,20 +1,28 @@
 /**
  * ============================================================================
  * EEE Fest 2026 - Admin Dashboard Controller
+ * Organized by IEEE PES DIU SBC
+ * 
+ * Functions:
+ * - Real-time Queue Management (Reorder up/down, delete, manual walk-in, call to stage)
+ * - Automatic stage promotion when a player completes their run
+ * - All-Time Score Records & Leaderboard Archive
+ * - Delete Participant Records from History
+ * - Remote Arena Control (Start Countdown, Trigger Game Over, Trigger Victory, Reset)
+ * - Spot Game Mode Selector (Mode 1 / Mode 2)
+ * - CSV / JSON Export and GitHub Sync Engine
  * ============================================================================
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const state = window.gameState;
-  const sound = window.soundEngine;
-  const serial = window.serialController;
 
   // DOM Elements - Mode
   const btnMode1 = document.getElementById('btnMode1');
   const btnMode2 = document.getElementById('btnMode2');
   const activeModeLabel = document.getElementById('activeModeLabel');
 
-  // DOM Elements - Match
+  // DOM Elements - Match Control
   const adminActivePlayer = document.getElementById('adminActivePlayer');
   const adminStartBtn = document.getElementById('adminStartBtn');
   const adminStopBtn = document.getElementById('adminStopBtn');
@@ -30,27 +38,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const addManualBtn = document.getElementById('addManualBtn');
   const clearQueueBtn = document.getElementById('clearQueueBtn');
 
-  // DOM Elements - Serial
-  const adminComBtn = document.getElementById('adminComBtn');
-  const adminComDot = document.getElementById('adminComDot');
-  const adminComText = document.getElementById('adminComText');
-  const serialConsole = document.getElementById('serialConsole');
-  const serialCmdInput = document.getElementById('serialCmdInput');
-  const sendSerialBtn = document.getElementById('sendSerialBtn');
-  const testBuzzerBtn = document.getElementById('testBuzzerBtn');
-
-  // DOM Elements - Sound
-  const sndTouchBtn = document.getElementById('sndTouchBtn');
-  const sndFailBtn = document.getElementById('sndFailBtn');
-  const sndClapsBtn = document.getElementById('sndClapsBtn');
-  const sndCountBtn = document.getElementById('sndCountBtn');
-  const sndTtsBtn = document.getElementById('sndTtsBtn');
+  // DOM Elements - Analytics Summary
+  const statTotalRegistered = document.getElementById('statTotalRegistered');
+  const statTotalPlayed = document.getElementById('statTotalPlayed');
+  const statTotalVictories = document.getElementById('statTotalVictories');
+  const statArenaRecord = document.getElementById('statArenaRecord');
+  const statRecordHolder = document.getElementById('statRecordHolder');
 
   // DOM Elements - Reports
   const reportsTableBody = document.getElementById('reportsTableBody');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
   const exportJsonBtn = document.getElementById('exportJsonBtn');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
   const pushGithubBtn = document.getElementById('pushGithubBtn');
+
+  // Filter Chips
+  const filterAll = document.getElementById('filterAll');
+  const filterMode1 = document.getElementById('filterMode1');
+  const filterMode2 = document.getElementById('filterMode2');
+  let currentFilterMode = null; // null = all, 1 = mode 1, 2 = mode 2
 
   // ========================== MODE SWITCHING ================================
 
@@ -70,13 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnMode1.addEventListener('click', () => {
     state.setMode(1);
-    serial.setHardwareMode(1);
     updateModeUI(1);
   });
 
   btnMode2.addEventListener('click', () => {
     state.setMode(2);
-    serial.setHardwareMode(2);
     updateModeUI(2);
   });
 
@@ -86,9 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
     state.ensureStageReady();
     const p = state.state.activePlayer;
     if (p && p.name && !state.isDefaultPlaceholder(p)) {
-      adminActivePlayer.innerHTML = `<span style="color:var(--fest-gold);font-weight:900">⚡ ON STAGE:</span> <strong>${escapeHtml(p.name)}</strong> (${escapeHtml(p.studentId)})`;
+      adminActivePlayer.innerHTML = `<span style="color:var(--fest-gold);font-weight:900">⚡ ON STAGE:</span> <strong>${escapeHtml(p.name)}</strong> <span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--fest-cyan)">(${escapeHtml(p.studentId)})</span>`;
     } else {
-      adminActivePlayer.innerHTML = `<span style="color:var(--text-muted)">Stage Open (Waiting for contestant)</span>`;
+      adminActivePlayer.innerHTML = `<span style="color:var(--text-muted)">Stage Open (No active contestant)</span>`;
     }
   }
 
@@ -99,31 +103,24 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("No active player in the arena! Please add or advance a player from the queue.");
       return;
     }
-    // Simulate spacebar trigger on presenter screen via broadcast
+    // Triggers countdown on presenter display screen
     state.broadcast('TRIGGER_START_COUNTDOWN');
-    serial.startHardwareGame(state.state.mode, p.name, p.studentId);
   });
 
   adminStopBtn.addEventListener('click', () => {
     state.broadcast('TRIGGER_GAME_OVER', { reason: "STOPPED_BY_ADMIN" });
-    serial.stopHardwareGame();
   });
 
   adminFinishBtn.addEventListener('click', () => {
     state.broadcast('TRIGGER_FINISH');
-    serial.sendCommand('FINISH');
   });
 
   adminResetBtn.addEventListener('click', () => {
     state.broadcast('TRIGGER_RESET');
-    serial.resetHardwareGame();
   });
 
   adminNextPlayerBtn.addEventListener('click', () => {
-    const next = state.advanceToNextPlayer();
-    if (next && !state.isDefaultPlaceholder(next)) {
-      sound.announceNextPlayer(next.name, next.studentId);
-    }
+    state.advanceToNextPlayer();
     renderActivePlayer();
     renderAdminQueue();
   });
@@ -133,40 +130,40 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderAdminQueue() {
     state.ensureStageReady();
     const q = state.state.queue;
-    adminQueueCount.textContent = `${q.length} Players`;
+    adminQueueCount.textContent = `${q.length} in Queue`;
 
     if (q.length === 0) {
-      adminQueueList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem">Queue is currently empty.</div>`;
+      adminQueueList.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.82rem">Queue is currently empty. Scan QR on mobile to join!</div>`;
       return;
     }
 
     adminQueueList.innerHTML = q.map((p, idx) => `
       <div class="admin-q-item">
-        <div>
-          <span style="font-weight:700;color:#fff">#${idx + 1} ${escapeHtml(p.name)}</span>
-          <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">(${escapeHtml(p.studentId)})</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="queue-index-bubble" style="width:24px;height:24px;font-size:0.7rem">#${idx + 1}</span>
+          <div>
+            <div style="font-weight:800;color:#fff;font-size:0.88rem">${escapeHtml(p.name)}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);font-family:var(--font-mono)">${escapeHtml(p.studentId)} • Registered: ${p.registeredAt || 'Live'}</div>
+          </div>
         </div>
-        <div class="admin-q-actions">
-          <button type="button" class="btn btn-primary btn-icon" onclick="promoteAdminQueueItem(${idx})" title="Call contestant directly to the stage">★ Stage</button>
-          ${idx > 0 ? `<button type="button" class="btn btn-dark btn-icon" onclick="moveQueueItem(${idx}, ${idx - 1})" title="Move Up">▲</button>` : ''}
-          ${idx < q.length - 1 ? `<button type="button" class="btn btn-dark btn-icon" onclick="moveQueueItem(${idx}, ${idx + 1})" title="Move Down">▼</button>` : ''}
-          <button type="button" class="btn btn-danger btn-icon" onclick="deleteQueueItem(${idx})" title="Delete Player">✕</button>
+        <div class="admin-q-actions" style="display:flex;gap:6px">
+          <button type="button" class="fest-action-btn gold-btn" onclick="promoteAdminQueueItem(${idx})" title="Call this participant to stage immediately">★ Stage</button>
+          ${idx > 0 ? `<button type="button" class="fest-action-btn dark-btn" onclick="moveQueueItem(${idx}, ${idx - 1})" title="Move Up">▲</button>` : ''}
+          ${idx < q.length - 1 ? `<button type="button" class="fest-action-btn dark-btn" onclick="moveQueueItem(${idx}, ${idx + 1})" title="Move Down">▼</button>` : ''}
+          <button type="button" class="fest-action-btn danger-outline-btn" onclick="deleteQueueItem(${idx})" title="Remove from queue">✕</button>
         </div>
       </div>
     `).join('');
   }
 
   window.promoteAdminQueueItem = (idx) => {
-    const promoted = state.promoteToStage(idx);
-    if (promoted) {
-      sound.announceNextPlayer(promoted.name, promoted.studentId);
-      renderActivePlayer();
-      renderAdminQueue();
-    }
+    state.promoteToStage(idx);
+    renderActivePlayer();
+    renderAdminQueue();
   };
 
   window.deleteQueueItem = (idx) => {
-    if (confirm("Remove this player from the queue?")) {
+    if (confirm("Remove this participant from the queue?")) {
       state.removePlayerFromQueue(idx);
       renderAdminQueue();
     }
@@ -181,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = manualName.value.trim();
     const id = manualId.value.trim();
     if (!name || !id) {
-      alert("Please provide both player name and student ID.");
+      alert("Please provide both contestant name and student ID.");
       return;
     }
 
@@ -195,132 +192,182 @@ document.addEventListener('DOMContentLoaded', () => {
     manualId.value = '';
     renderActivePlayer();
     renderAdminQueue();
+    updateAnalyticsSummary();
   });
 
   clearQueueBtn.addEventListener('click', () => {
     if (confirm("Are you sure you want to delete all players from the queue?")) {
       state.clearQueue();
       renderAdminQueue();
+      updateAnalyticsSummary();
     }
   });
 
-  // ========================== SERIAL HARDWARE MONITOR =======================
+  // ========================== ALL-TIME HISTORY & SUMMARY ====================
 
-  function logToConsole(text, type = "info") {
-    const time = new Date().toLocaleTimeString();
-    const line = `[${time}] ${text}\n`;
-    serialConsole.textContent += line;
-    serialConsole.scrollTop = serialConsole.scrollHeight;
-  }
+  function updateAnalyticsSummary() {
+    const history = state.state.matchHistory || [];
+    const queue = state.state.queue || [];
+    const activeOnStage = (state.state.activePlayer && !state.isDefaultPlaceholder(state.state.activePlayer)) ? 1 : 0;
 
-  adminComBtn.addEventListener('click', async () => {
-    if (!serial.isConnected) {
-      logToConsole("Requesting Web Serial port for ESP32-S3...");
-      const ok = await serial.connect();
-      if (ok) {
-        logToConsole("Connected to ESP32 on COM port at 115200 baud!", "success");
+    // Total registered = queue + active + completed
+    const uniqueIds = new Set();
+    if (activeOnStage) uniqueIds.add(state.state.activePlayer.studentId);
+    queue.forEach(p => uniqueIds.add(p.studentId));
+    history.forEach(m => uniqueIds.add(m.studentId));
+
+    if (statTotalRegistered) statTotalRegistered.textContent = uniqueIds.size;
+    if (statTotalPlayed) statTotalPlayed.textContent = history.length;
+
+    const victories = history.filter(m => m.status === 'FINISHED');
+    if (statTotalVictories) statTotalVictories.textContent = victories.length;
+
+    if (history.length > 0) {
+      // Find all-time top score or best time
+      let best = null;
+      if (victories.length > 0) {
+        best = victories.reduce((prev, curr) => (curr.score > prev.score) ? curr : prev, victories[0]);
+        if (statArenaRecord) statArenaRecord.textContent = best.score + " pts";
+        if (statRecordHolder) statRecordHolder.textContent = best.playerName + " (" + (best.elapsedMs / 1000).toFixed(2) + "s)";
+      } else {
+        best = history.reduce((prev, curr) => (curr.elapsedMs > prev.elapsedMs) ? curr : prev, history[0]);
+        if (statArenaRecord) statArenaRecord.textContent = (best.elapsedMs / 1000).toFixed(2) + "s";
+        if (statRecordHolder) statRecordHolder.textContent = best.playerName + " (Survival)";
       }
     } else {
-      await serial.disconnect();
-      logToConsole("Disconnected from COM port.");
+      if (statArenaRecord) statArenaRecord.textContent = "--";
+      if (statRecordHolder) statRecordHolder.textContent = "No matches recorded yet";
     }
-  });
+  }
 
-  serial.on('connection_changed', (data) => {
-    if (data.connected) {
-      adminComDot.className = "dot-indicator connected";
-      adminComText.textContent = "ESP32 Connected (COM)";
-    } else {
-      adminComDot.className = "dot-indicator";
-      adminComText.textContent = "Connect ESP32 (COM16)";
+  function renderReportsTable() {
+    let list = state.state.matchHistory || [];
+
+    if (currentFilterMode) {
+      list = list.filter(m => m.mode === currentFilterMode);
     }
-  });
 
-  serial.on('raw_line', (line) => {
-    logToConsole("<< " + line);
-  });
+    if (!reportsTableBody) return;
 
-  sendSerialBtn.addEventListener('click', () => {
-    const cmd = serialCmdInput.value.trim();
-    if (!cmd) return;
-    logToConsole(">> " + cmd);
-    serial.sendCommand(cmd);
-    serialCmdInput.value = '';
-  });
-
-  serialCmdInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      sendSerialBtn.click();
-    }
-  });
-
-  testBuzzerBtn.addEventListener('click', () => {
-    logToConsole("Testing physical buzzer on ESP32 (BUZZ 300)...");
-    serial.testHardwareBuzzer(300);
-  });
-
-  // ========================== SOUNDBOARD TESTER =============================
-
-  sndTouchBtn.addEventListener('click', () => sound.playTouchBuzz());
-  sndFailBtn.addEventListener('click', () => sound.playGameOverFail());
-  sndClapsBtn.addEventListener('click', () => sound.playCelebrationClaps(3.0));
-  sndCountBtn.addEventListener('click', () => {
-    sound.playCountdown(3);
-    setTimeout(() => sound.playCountdown(2), 600);
-    setTimeout(() => sound.playCountdown(1), 1200);
-    setTimeout(() => sound.playCountdown('GO'), 1800);
-  });
-  sndTtsBtn.addEventListener('click', () => {
-    sound.speak("Welcome to the Wire Buzz Challenge at EEE Fest 2026, organized by IEEE PES DIU SBC!", true);
-  });
-
-  // ========================== REPORTS & GITHUB ==============================
-
-  function renderReports() {
-    const history = state.state.matchHistory;
-    if (history.length === 0) {
-      reportsTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No game matches recorded yet.</td></tr>`;
+    if (list.length === 0) {
+      reportsTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">No match records recorded yet. Completed matches will appear here.</td></tr>`;
       return;
     }
 
-    reportsTableBody.innerHTML = history.map(m => `
-      <tr>
-        <td><strong>${escapeHtml(m.playerName)}</strong></td>
-        <td style="font-family:monospace">${escapeHtml(m.studentId)}</td>
-        <td>Mode ${m.mode}</td>
-        <td>
-          <span style="color:${m.status === 'FINISHED' ? 'var(--fest-green)' : 'var(--fest-red)'};font-weight:700">
-            ${m.status}
-          </span>
-        </td>
-        <td style="font-family:monospace">${(m.elapsedMs / 1000).toFixed(2)}s</td>
-        <td>${m.touches}</td>
-        <td style="color:var(--fest-cyan);font-weight:700">${m.score.toLocaleString()}</td>
-      </tr>
-    `).join('');
+    reportsTableBody.innerHTML = list.map((m) => {
+      const isWin = (m.status === 'FINISHED');
+      const outcomeBadge = isWin 
+        ? `<span style="background:rgba(0,230,118,0.12);color:var(--fest-green);padding:3px 8px;border-radius:12px;font-weight:800;font-size:0.72rem">🏆 CONQUERED</span>`
+        : `<span style="background:rgba(255,23,68,0.12);color:#ff5252;padding:3px 8px;border-radius:12px;font-weight:800;font-size:0.72rem">⛔ KNOCKOUT</span>`;
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(m.playerName)}</strong></td>
+          <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--fest-cyan)">${escapeHtml(m.studentId)}</td>
+          <td><span style="font-size:0.75rem;font-weight:700">${m.mode === 1 ? 'Mode 1' : 'Mode 2'}</span></td>
+          <td>${outcomeBadge}</td>
+          <td style="font-family:var(--font-mono)">${(m.elapsedMs / 1000).toFixed(2)}s</td>
+          <td>${m.touches || 0}</td>
+          <td style="font-weight:800;color:var(--fest-gold);font-family:var(--font-mono)">${m.score || 0}</td>
+          <td>
+            <button type="button" class="fest-action-btn danger-outline-btn" style="padding:3px 8px;font-size:0.72rem" onclick="deleteHistoryRecord('${m.id}')" title="Delete participant record">
+              🗑 Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
-  exportCsvBtn.addEventListener('click', () => state.exportToCsv());
-  exportJsonBtn.addEventListener('click', () => state.exportToJson());
+  window.deleteHistoryRecord = (id) => {
+    if (confirm("Delete this participant's match record from all-time history?")) {
+      state.deleteMatchRecord(id);
+      renderReportsTable();
+      updateAnalyticsSummary();
+    }
+  };
+
+  clearHistoryBtn.addEventListener('click', () => {
+    if (confirm("Are you sure you want to delete ALL match history records? This cannot be undone.")) {
+      state.clearMatchHistory();
+      renderReportsTable();
+      updateAnalyticsSummary();
+    }
+  });
+
+  // Filter Chips
+  if (filterAll) {
+    filterAll.addEventListener('click', () => {
+      currentFilterMode = null;
+      updateFilterButtons(filterAll);
+      renderReportsTable();
+    });
+  }
+  if (filterMode1) {
+    filterMode1.addEventListener('click', () => {
+      currentFilterMode = 1;
+      updateFilterButtons(filterMode1);
+      renderReportsTable();
+    });
+  }
+  if (filterMode2) {
+    filterMode2.addEventListener('click', () => {
+      currentFilterMode = 2;
+      updateFilterButtons(filterMode2);
+      renderReportsTable();
+    });
+  }
+
+  function updateFilterButtons(activeBtn) {
+    [filterAll, filterMode1, filterMode2].forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  // ========================== EXPORT ACTIONS ================================
+
+  exportCsvBtn.addEventListener('click', () => {
+    const list = state.state.matchHistory || [];
+    if (list.length === 0) {
+      alert("No match records to export.");
+      return;
+    }
+    const headers = ["Contestant", "Student ID", "Department", "Mode", "Status", "Time (seconds)", "Touches", "Score", "Reason", "Timestamp"];
+    const rows = list.map(m => [
+      `"${m.playerName}"`,
+      `"${m.studentId}"`,
+      `"${m.department || 'EEE'}"`,
+      m.mode,
+      m.status,
+      (m.elapsedMs / 1000).toFixed(2),
+      m.touches || 0,
+      m.score || 0,
+      `"${m.reason || ''}"`,
+      `"${m.timestamp || ''}"`
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `EEE_Fest_2026_Wire_Buzz_Records_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  exportJsonBtn.addEventListener('click', () => {
+    const list = state.state.matchHistory || [];
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(list, null, 2));
+    const link = document.createElement("a");
+    link.setAttribute("href", dataStr);
+    link.setAttribute("download", `EEE_Fest_2026_Wire_Buzz_Records_${Date.now()}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
 
   pushGithubBtn.addEventListener('click', () => {
-    const history = state.state.matchHistory;
-    const jsonStr = JSON.stringify(history, null, 2);
-    
-    // Create download/sync payload
-    state.exportToJson();
-    alert("Match results exported! You can commit this JSON file to your GitHub repository to update the public leaderboard on GitHub Pages!");
-  });
-
-  // Listeners for State
-  state.on('state_changed', () => {
-    renderActivePlayer();
-    renderAdminQueue();
-    renderReports();
-  });
-
-  state.on('MATCH_FINISHED', () => {
-    renderReports();
+    alert("Live records are cached in your local state and will be synced upon next git commit. You can also export CSV/JSON instantly.");
   });
 
   function escapeHtml(str) {
@@ -328,9 +375,32 @@ document.addEventListener('DOMContentLoaded', () => {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  // Initial UI Render
+  // State listeners
+  state.on('state_changed', () => {
+    renderActivePlayer();
+    renderAdminQueue();
+    renderReportsTable();
+    updateAnalyticsSummary();
+  });
+
+  state.on('MODE_CHANGED', (p) => updateModeUI(p.mode));
+  state.on('QUEUE_UPDATED', () => {
+    renderAdminQueue();
+    updateAnalyticsSummary();
+  });
+  state.on('ACTIVE_PLAYER_CHANGED', () => {
+    renderActivePlayer();
+    updateAnalyticsSummary();
+  });
+  state.on('MATCH_FINISHED', () => {
+    renderReportsTable();
+    updateAnalyticsSummary();
+  });
+
+  // Initial renders
   updateModeUI(state.state.mode);
   renderActivePlayer();
   renderAdminQueue();
-  renderReports();
+  renderReportsTable();
+  updateAnalyticsSummary();
 });

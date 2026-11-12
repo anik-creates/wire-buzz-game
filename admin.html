@@ -10,7 +10,7 @@
 <body class="fest-body">
   <div class="fest-canvas admin-mode">
     
-    <!-- Minimalist Fest Admin Header -->
+    <!-- Minimalist Fest Admin Navbar (No Hardware Connection Here) -->
     <header class="fest-navbar">
       <div class="fest-branding">
         <div class="fest-logos">
@@ -21,20 +21,15 @@
 
         <div class="fest-title-text">
           <h1>ADMIN COMMAND CENTER</h1>
-          <p>Wire Buzz Control Engine • IEEE PES DIU SBC</p>
+          <p>Championship Control & Records Archive • IEEE PES DIU SBC</p>
         </div>
       </div>
 
       <div class="fest-nav-widgets">
-        <div id="cloudSyncPill" class="fest-status-pill" title="Cross-device cloud registration status">
+        <div id="cloudSyncPill" class="fest-status-pill" title="Cloud synchronizer status">
           <span id="cloudSyncDot" class="pulse-dot"></span>
-          <span id="cloudSyncText">Cloud Syncing...</span>
+          <span id="cloudSyncText">Cloud Live</span>
         </div>
-
-        <button type="button" id="adminComBtn" class="fest-status-pill action-pill">
-          <span id="adminComDot" class="pulse-dot"></span>
-          <span id="adminComText">Connect ESP32 (COM16)</span>
-        </button>
 
         <a href="index.html" target="_blank" class="fest-action-btn gold-btn">
           Open Presenter View ↗
@@ -42,165 +37,180 @@
       </div>
     </header>
 
-    <!-- Admin Main Stage (No Heavy Cards, Open Fest Sections) -->
+    <!-- Championship Executive Analytics Summary -->
+    <section class="admin-summary-row">
+      <div class="admin-stat-card">
+        <div class="stat-card-label">PARTICIPANTS REGISTERED</div>
+        <div id="statTotalRegistered" class="stat-card-value">0</div>
+        <div class="stat-card-sub">In Queue & Arena</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="stat-card-label">MATCHES PLAYED</div>
+        <div id="statTotalPlayed" class="stat-card-value">0</div>
+        <div class="stat-card-sub">Recorded in Hall of Fame</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="stat-card-label">CONQUERED RUNS</div>
+        <div id="statTotalVictories" class="stat-card-value" style="color:var(--fest-green)">0</div>
+        <div class="stat-card-sub">Finish Line Cleared 🏆</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="stat-card-label">ALL-TIME BEST</div>
+        <div id="statArenaRecord" class="stat-card-value" style="color:var(--fest-gold);font-size:1.6rem">--</div>
+        <div id="statRecordHolder" class="stat-card-sub">Champion Record</div>
+      </div>
+    </section>
+
+    <!-- Admin Main Stage Grid -->
     <main class="admin-main-grid">
 
-      <!-- Section 1: Spot Game Mode Switcher & Arena Controls -->
-      <section class="admin-panel-section">
-        <div class="panel-section-header">
-          <div class="panel-header-left">
-            <span class="panel-header-eyebrow">CONFIGURATION</span>
-            <h3>GAME MODE SELECTOR (ON-THE-SPOT)</h3>
-          </div>
-          <span id="activeModeLabel" class="panel-header-pill">Mode 1 Active</span>
-        </div>
+      <!-- Left Column: Arena Control & Queue Management -->
+      <div class="admin-column">
 
-        <div class="admin-mode-grid">
-          <div id="btnMode1" class="admin-mode-select-box active-mode-1">
-            <div class="mode-select-tag red-tag">MODE 1</div>
-            <h4>Sudden Death Knockout</h4>
-            <p>One touch to the line = Game Over instantly. Records exact survival time and shows Red Glitch Alert Screen.</p>
+        <!-- Arena Match Control & Spot Mode Selector -->
+        <section class="admin-panel-section">
+          <div class="panel-section-header">
+            <div class="panel-header-left">
+              <span class="panel-header-eyebrow">CHAMPIONSHIP MODE</span>
+              <h3>ON-THE-SPOT MODE SELECTOR</h3>
+            </div>
+            <span id="activeModeLabel" class="panel-header-pill">Mode 1 Active</span>
           </div>
 
-          <div id="btnMode2" class="admin-mode-select-box">
-            <div class="mode-select-tag gold-tag">MODE 2</div>
-            <h4>Touch Master Precision</h4>
-            <p>Counts total touches + total elapsed time. Generates official score (10,000 base minus touch & time penalties).</p>
+          <div class="admin-mode-grid">
+            <div id="btnMode1" class="admin-mode-select-box active-mode-1">
+              <div class="mode-select-tag red-tag">MODE 1</div>
+              <h4>Sudden Death Knockout</h4>
+              <p>One touch to the line = Instant Game Over. Records exact survival time.</p>
+            </div>
+
+            <div id="btnMode2" class="admin-mode-select-box">
+              <div class="mode-select-tag gold-tag">MODE 2</div>
+              <h4>Touch Master Precision</h4>
+              <p>Counts total touches + elapsed time. Generates 10,000 pt precision score.</p>
+            </div>
           </div>
-        </div>
 
-        <div class="panel-section-divider"></div>
+          <div class="panel-section-divider"></div>
 
-        <div class="panel-section-header">
-          <div class="panel-header-left">
-            <span class="panel-header-eyebrow">ARENA MATCH CONTROL</span>
-            <h4 id="adminActivePlayer" style="color:#fff;font-size:1.1rem">Active Player: None</h4>
+          <div class="panel-section-header">
+            <div class="panel-header-left">
+              <span class="panel-header-eyebrow">STAGE CONTROLLER</span>
+              <h4 id="adminActivePlayer" style="color:#fff;font-size:1.05rem">Stage Open</h4>
+            </div>
           </div>
-        </div>
 
-        <div class="admin-action-row">
-          <button type="button" id="adminStartBtn" class="fest-ctrl-btn primary-ctrl">
-            ▶ Start Game (Spacebar)
-          </button>
-          <button type="button" id="adminStopBtn" class="fest-ctrl-btn danger-ctrl">
-            ⛔ Trigger Game Over
-          </button>
-          <button type="button" id="adminFinishBtn" class="fest-ctrl-btn gold-ctrl">
-            🏆 Trigger Victory (Finish)
-          </button>
-          <button type="button" id="adminResetBtn" class="fest-ctrl-btn dark-ctrl">
-            🔄 Reset Stage
-          </button>
-          <button type="button" id="adminNextPlayerBtn" class="fest-ctrl-btn cyan-ctrl">
-            ⏩ Call Next Player
-          </button>
-        </div>
-      </section>
-
-      <!-- Section 2: Queue Management & Walk-In Add -->
-      <section class="admin-panel-section">
-        <div class="panel-section-header">
-          <div class="panel-header-left">
-            <span class="panel-header-eyebrow">LIVE PARTICIPATION</span>
-            <h3>CHALLENGER QUEUE MANAGEMENT</h3>
-          </div>
-          <span id="adminQueueCount" class="panel-header-pill">0 Players</span>
-        </div>
-
-        <div class="admin-queue-scroll-list" id="adminQueueList"></div>
-
-        <div class="manual-add-container">
-          <span class="manual-add-title">+ MANUAL WALK-IN REGISTRATION</span>
-          <div class="manual-add-inputs">
-            <input type="text" id="manualName" class="admin-fest-input" placeholder="Contestant Name">
-            <input type="text" id="manualId" class="admin-fest-input" placeholder="Student ID (e.g. 231-15-1234)">
-          </div>
-          <div class="manual-add-actions">
-            <button type="button" id="addManualBtn" class="fest-action-btn gold-btn">
-              Add to Live Queue
+          <div class="admin-action-row">
+            <button type="button" id="adminStartBtn" class="fest-ctrl-btn primary-ctrl">
+              ▶ Start Countdown (Spacebar)
             </button>
-            <button type="button" id="clearQueueBtn" class="fest-action-btn danger-outline-btn">
-              Clear Entire Queue
+            <button type="button" id="adminStopBtn" class="fest-ctrl-btn danger-ctrl">
+              ⛔ Trigger Game Over
+            </button>
+            <button type="button" id="adminFinishBtn" class="fest-ctrl-btn gold-ctrl">
+              🏆 Trigger Victory
+            </button>
+            <button type="button" id="adminResetBtn" class="fest-ctrl-btn dark-ctrl">
+              🔄 Reset Stage
+            </button>
+            <button type="button" id="adminNextPlayerBtn" class="fest-ctrl-btn cyan-ctrl">
+              ⏩ Advance to Next
             </button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Section 3: Hardware COM Console & Soundboard -->
-      <section class="admin-panel-section">
-        <div class="panel-section-header">
-          <div class="panel-header-left">
-            <span class="panel-header-eyebrow">HARDWARE DIAGNOSTICS</span>
-            <h3>ESP32 SERIAL COM CONSOLE</h3>
+        <!-- Challenger Queue Management -->
+        <section class="admin-panel-section" style="margin-top:20px">
+          <div class="panel-section-header">
+            <div class="panel-header-left">
+              <span class="panel-header-eyebrow">LIVE QUEUE MANAGEMENT</span>
+              <h3>CONTESTANTS IN QUEUE</h3>
+            </div>
+            <span id="adminQueueCount" class="panel-header-pill">0 Players</span>
           </div>
-          <button type="button" id="testBuzzerBtn" class="fest-action-btn gold-outline-btn">
-            🔊 Test Physical Buzzer
-          </button>
-        </div>
 
-        <div class="serial-log-window" id="serialConsole">Waiting for COM port connection...</div>
+          <div class="admin-queue-scroll-list" id="adminQueueList"></div>
 
-        <div class="soundboard-container">
-          <span class="soundboard-title">PROJECTION AUDIO SOUNDBOARD</span>
-          <div class="soundboard-btn-grid">
-            <button type="button" class="sfx-btn" onclick="window.soundEngine.playCountdownBeep(3)">Beep 3</button>
-            <button type="button" class="sfx-btn" onclick="window.soundEngine.playCountdownGo()">Beep GO</button>
-            <button type="button" class="sfx-btn" onclick="window.soundEngine.playTouchBuzz()">Touch Buzz</button>
-            <button type="button" class="sfx-btn" onclick="window.soundEngine.playGameOverFail()">Game Over SFX</button>
-            <button type="button" class="sfx-btn" onclick="window.soundEngine.playCelebrationClaps(3)">Victory Claps</button>
-            <button type="button" class="sfx-btn" onclick="window.soundEngine.speak('Welcome to EEE Fest 2026 Wire Buzz Challenge!')">TTS Test</button>
+          <div class="manual-add-container">
+            <span class="manual-add-title">+ MANUAL WALK-IN PARTICIPANT ENTRY</span>
+            <div class="manual-add-inputs">
+              <input type="text" id="manualName" class="admin-fest-input" placeholder="Contestant Name" autocomplete="off">
+              <input type="text" id="manualId" class="admin-fest-input" placeholder="Student ID (e.g. 231-15-1234)" autocomplete="off">
+            </div>
+            <div class="manual-add-actions">
+              <button type="button" id="addManualBtn" class="fest-action-btn gold-btn">
+                + Add Contestant
+              </button>
+              <button type="button" id="clearQueueBtn" class="fest-action-btn danger-outline-btn">
+                Clear Queue
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Section 4: Live Reports & Export -->
-      <section class="admin-panel-section">
-        <div class="panel-section-header">
-          <div class="panel-header-left">
-            <span class="panel-header-eyebrow">MATCH ARCHIVE</span>
-            <h3>CHAMPIONSHIP REPORTS & LEADERBOARD</h3>
-          </div>
-          <div class="export-btn-group">
-            <button type="button" id="exportCsvBtn" class="fest-action-btn dark-btn">Export CSV</button>
-            <button type="button" id="exportJsonBtn" class="fest-action-btn dark-btn">Export JSON</button>
-          </div>
-        </div>
+      </div>
 
-        <div class="reports-table-wrap">
-          <table class="reports-table">
-            <thead>
-              <tr>
-                <th>Contestant</th>
-                <th>Student ID</th>
-                <th>Mode</th>
-                <th>Status</th>
-                <th>Time</th>
-                <th>Touches</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody id="reportsTableBody"></tbody>
-          </table>
-        </div>
-
-        <div class="github-sync-strip">
-          <div>
-            <div style="font-weight:800;font-size:0.88rem;color:#fff">GitHub Sync Engine</div>
-            <div style="font-size:0.75rem;color:var(--text-secondary)">Syncs reports & leaderboard directly to your GitHub repository</div>
+      <!-- Right Column: All-Time Match History & Championship Archive -->
+      <div class="admin-column">
+        
+        <section class="admin-panel-section">
+          <div class="panel-section-header">
+            <div class="panel-header-left">
+              <span class="panel-header-eyebrow">OFFICIAL ARCHIVE</span>
+              <h3>ALL-TIME PARTICIPANT RECORDS</h3>
+            </div>
+            <div class="export-btn-group">
+              <button type="button" id="exportCsvBtn" class="fest-action-btn dark-btn">Export CSV</button>
+              <button type="button" id="exportJsonBtn" class="fest-action-btn dark-btn">Export JSON</button>
+              <button type="button" id="clearHistoryBtn" class="fest-action-btn danger-outline-btn">Clear History</button>
+            </div>
           </div>
-          <button type="button" id="pushGithubBtn" class="fest-action-btn gold-btn">
-            🚀 Push to GitHub
-          </button>
-        </div>
-      </section>
+
+          <div class="history-filter-row">
+            <button type="button" class="filter-chip active" id="filterAll">All Matches</button>
+            <button type="button" class="filter-chip" id="filterMode1">Mode 1 (Sudden Death)</button>
+            <button type="button" class="filter-chip" id="filterMode2">Mode 2 (Touch Master)</button>
+          </div>
+
+          <div class="reports-table-wrap">
+            <table class="reports-table">
+              <thead>
+                <tr>
+                  <th>Contestant</th>
+                  <th>Student ID</th>
+                  <th>Mode</th>
+                  <th>Outcome</th>
+                  <th>Time</th>
+                  <th>Touches</th>
+                  <th>Score</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="github-sync-strip">
+            <div>
+              <div style="font-weight:800;font-size:0.88rem;color:#fff">GitHub Sync Engine</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary)">Syncs participant records directly to your GitHub repository</div>
+            </div>
+            <button type="button" id="pushGithubBtn" class="fest-action-btn gold-btn">
+              🚀 Push to GitHub
+            </button>
+          </div>
+        </section>
+
+      </div>
 
     </main>
   </div>
 
-  <!-- Real-Time Scripts (Zero External Dependencies) -->
+  <!-- Real-Time Sync Scripts (No External Dependencies) -->
   <script src="js/mqtt.min.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/serial.js"></script>
   <script src="js/state.js"></script>
   <script src="js/sync.js"></script>
   <script src="js/admin.js"></script>

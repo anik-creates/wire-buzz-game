@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const countdownOverlay = document.getElementById('countdownOverlay');
   const countdownNumber = document.getElementById('countdownNumber');
+  const countdownPlayerCallout = document.getElementById('countdownPlayerCallout');
   const gameoverOverlay = document.getElementById('gameoverOverlay');
   const victoryOverlay = document.getElementById('victoryOverlay');
   const leaderboardOverlay = document.getElementById('leaderboardOverlay');
@@ -215,6 +216,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (touchCounter) touchCounter.textContent = "0";
 
     const p = state.state.activePlayer;
+    if (countdownPlayerCallout) {
+      countdownPlayerCallout.textContent = (p && p.name) ? `${p.name} (${p.studentId || 'Challenger'})` : "READY PLAYER";
+    }
     sound.announceGameStart(p.name, state.state.mode);
 
     countdownOverlay.style.display = 'flex';
@@ -387,14 +391,16 @@ document.addEventListener('DOMContentLoaded', () => {
     podiumSlots.forEach((slot, i) => {
       if (!slot) return;
       const l = leaders[i];
+      const nameEl = slot.querySelector('.podium-contestant-name') || slot.querySelector('.podium-name');
+      const scoreEl = slot.querySelector('.podium-contestant-score') || slot.querySelector('.podium-score');
       if (l) {
         slot.style.opacity = '1';
-        slot.querySelector('.podium-name').textContent = l.playerName;
-        slot.querySelector('.podium-score').textContent = (state.state.mode === 1) ? `${(l.elapsedMs / 1000).toFixed(2)}s` : `${l.score} pts`;
+        if (nameEl) nameEl.textContent = l.playerName;
+        if (scoreEl) scoreEl.textContent = (state.state.mode === 1) ? `${(l.elapsedMs / 1000).toFixed(2)}s` : `${l.score} pts`;
       } else {
         slot.style.opacity = '0.35';
-        slot.querySelector('.podium-name').textContent = "---";
-        slot.querySelector('.podium-score').textContent = "---";
+        if (nameEl) nameEl.textContent = "---";
+        if (scoreEl) scoreEl.textContent = "---";
       }
     });
 

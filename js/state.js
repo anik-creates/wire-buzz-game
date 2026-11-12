@@ -7,7 +7,7 @@
 
 class GameStateManager {
   constructor() {
-    this.storageKey = 'eee_fest_wire_buzz_v5';
+    this.storageKey = 'eee_fest_wire_buzz_v6';
     this.channel = null;
     
     try {
@@ -24,8 +24,8 @@ class GameStateManager {
     this.state = {
       mode: 1, // 1: Sudden Death, 2: Multi-Touch Precision
       status: 'IDLE', // IDLE, COUNTDOWN, PLAYING, GAMEOVER, FINISHED, INTERMISSION
-      activePlayer: null, // Starts empty (no dummy players)
-      queue: [],          // Starts empty (no mock data)
+      activePlayer: null, // Empty initial state (no dummy players)
+      queue: [],          // Empty initial queue
       currentMatch: {
         startTime: 0,
         endTime: 0,
@@ -68,7 +68,7 @@ class GameStateManager {
            id === '';
   }
 
-  // Ensures top of queue automatically sits on the playground if stage is idle/vacant
+  // Ensures the top person in queue automatically takes the stage if stage is vacant/idle
   ensureStageReady() {
     if (this.isDefaultPlaceholder(this.state.activePlayer) && this.state.queue.length > 0) {
       this.state.activePlayer = this.state.queue.shift();
@@ -76,6 +76,7 @@ class GameStateManager {
       this.emit('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
       this.emit('QUEUE_UPDATED', { queue: this.state.queue });
       this.emit('state_changed', this.state);
+      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
     }
   }
 
@@ -85,7 +86,6 @@ class GameStateManager {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed.queue)) {
-          // Filter out any stale mock dummy players
           this.state.queue = parsed.queue.filter(p => !this.isDefaultPlaceholder(p));
         }
         if (Array.isArray(parsed.matchHistory)) {
@@ -146,7 +146,18 @@ class GameStateManager {
         if (payload.match) this.state.currentMatch = payload.match;
         break;
       case 'MATCH_FINISHED':
-        if (payload.record) this.state.matchHistory.unshift(payload.record);
+        if (payload.record) {
+          const exists = this.state.matchHistory.some(m => m.id === payload.record.id);
+          if (!exists) this.state.matchHistory.unshift(payload.record);
+        }
+        break;
+      case 'MATCH_RECORD_DELETED':
+        if (payload.id) {
+          this.state.matchHistory = this.state.matchHistory.filter(m => m.id !== payload.id);
+        }
+        break;
+      case 'MATCH_HISTORY_CLEARED':
+        this.state.matchHistory = [];
         break;
       case 'TRIGGER_FINISH':
         this.emit('TRIGGER_FINISH', payload);
@@ -178,18 +189,16 @@ class GameStateManager {
       registeredAt: new Date().toLocaleTimeString()
     };
 
-    // Check if player is already the active player
+    // Prevent duplicate entries
     if (this.state.activePlayer && this.state.activePlayer.studentId === player.studentId) {
       return this.state.activePlayer;
     }
-
-    // Check if player is already in queue
     const existing = this.state.queue.find(p => p.studentId === player.studentId);
     if (existing) {
       return existing;
     }
 
-    // If stage currently has no real contestant, this player goes DIRECTLY onto the playground!
+    // If stage currently has no real contestant, this player goes DIRECTLY to the playground!
     if (this.isDefaultPlaceholder(this.state.activePlayer)) {
       this.state.activePlayer = player;
       this.broadcast('ACTIVE_PLAYER_CHANGED', { player });
@@ -293,8 +302,8 @@ class GameStateManager {
     }
 
     const record = {
-      id: "m_" + Date.now(),
-      playerName: this.state.activePlayer ? this.state.activePlayer.name : "Player",
+      id: "m_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      playerName: this.state.activePlayer ? this.state.activePlayer.name : "Contestant",
       studentId: this.state.activePlayer ? this.state.activePlayer.studentId : "",
       department: this.state.activePlayer ? this.state.activePlayer.department : "EEE",
       mode: this.state.mode,
@@ -311,19 +320,29 @@ class GameStateManager {
     return record;
   }
 
+  deleteMatchRecord(id) {
+    this.state.matchHistory = this.state.matchHistory.filter(m => m.id !== id);
+    this.broadcast('MATCH_RECORD_DELETED', { id });
+    if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+  }
+
+  clearMatchHistory() {
+    this.state.matchHistory = [];
+    this.broadcast('MATCH_HISTORY_CLEARED', {});
+    if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+  }
+
   getLeaderboard(mode = null) {
     const targetMode = mode || this.state.mode;
     let list = this.state.matchHistory.filter(m => m.mode === targetMode);
 
     if (targetMode === 1) {
-      // In Sudden Death: Finished runs first, then sorted by longest survival time
       return list.sort((a, b) => {
         if (a.status === 'FINISHED' && b.status !== 'FINISHED') return -1;
         if (b.status === 'FINISHED' && a.status !== 'FINISHED') return 1;
         return b.elapsedMs - a.elapsedMs;
       });
     } else {
-      // Mode 2: Sorted by highest precision score
       return list.sort((a, b) => b.score - a.score);
     }
   }

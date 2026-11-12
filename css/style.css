@@ -1459,49 +1459,124 @@ body.fest-body {
   align-items: center;
 }
 
-.serial-log-window {
-  background: #000;
-  color: #00ff66;
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  height: 150px;
-  border-radius: 8px;
-  padding: 10px;
-  overflow-y: auto;
-  border: 1px solid rgba(0, 255, 102, 0.2);
-  margin-bottom: 12px;
-  white-space: pre-wrap;
+.animated-fest-logo {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px rgba(245, 166, 35, 0.45));
+  animation: festLogoGlow 1.6s infinite ease-in-out alternate;
 }
 
-.soundboard-container {
-  padding: 10px 0;
+.animated-pes-logo {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.45));
+  animation: pesLogoGlow 1.6s infinite ease-in-out alternate;
+  animation-delay: 0.25s;
 }
-.soundboard-title {
+
+@keyframes festLogoGlow {
+  0% {
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 12px rgba(245, 166, 35, 0.3));
+  }
+  100% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 32px rgba(245, 166, 35, 0.85));
+  }
+}
+
+@keyframes pesLogoGlow {
+  0% {
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.3));
+  }
+  100% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 32px rgba(0, 229, 255, 0.85));
+  }
+}
+
+.countdown-player-callout {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--fest-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+.admin-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .admin-summary-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.admin-stat-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.stat-card-label {
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   color: var(--text-muted);
-  display: block;
-  margin-bottom: 8px;
+  text-transform: uppercase;
 }
-.soundboard-btn-grid {
+.stat-card-value {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  margin: 6px 0 2px 0;
+}
+.stat-card-sub {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.admin-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-filter-row {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
-.sfx-btn {
+.filter-chip {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s;
 }
-.sfx-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
+}
+.filter-chip.active {
+  background: var(--fest-gold);
+  color: #000;
+  border-color: var(--fest-gold);
 }
 
 .reports-table-wrap {
