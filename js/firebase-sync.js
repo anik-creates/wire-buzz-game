@@ -85,10 +85,20 @@
       stateRef.on('value', (snapshot) => {
         const data = snapshot.val() || {};
         if (window.gameState) {
-          window.gameState.state.queue = Array.isArray(data.queue) ? data.queue : [];
-          if (data.activePlayer !== undefined) {
-            window.gameState.state.activePlayer = data.activePlayer;
+          if (Array.isArray(data.queue)) {
+            window.gameState.state.queue = data.queue.filter(p => p && !window.gameState.isDefaultPlaceholder(p));
+          } else {
+            window.gameState.state.queue = [];
           }
+
+          if (data.activePlayer && !window.gameState.isDefaultPlaceholder(data.activePlayer)) {
+            window.gameState.state.activePlayer = data.activePlayer;
+          } else {
+            window.gameState.state.activePlayer = null;
+          }
+
+          window.gameState.ensureStageReady();
+
           if (data.mode && (data.mode === 1 || data.mode === 2)) {
             window.gameState.state.mode = data.mode;
             window.gameState.emit('MODE_CHANGED', { mode: data.mode });

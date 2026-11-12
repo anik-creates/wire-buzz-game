@@ -17,6 +17,56 @@
 document.addEventListener('DOMContentLoaded', () => {
   const state = window.gameState;
 
+  // ========================== ADMIN AUTHENTICATION ==========================
+  const ADMIN_PASSWORD = "eeefestadmin";
+  const authOverlay = document.getElementById('adminAuthOverlay');
+  const authForm = document.getElementById('adminAuthForm');
+  const passwordInput = document.getElementById('adminPasswordInput');
+  const authError = document.getElementById('adminAuthError');
+  const adminLockBtn = document.getElementById('adminLockBtn');
+
+  function checkAdminAuth() {
+    const isAuthed = (sessionStorage.getItem('eee_fest_admin_auth') === 'authenticated');
+    if (isAuthed) {
+      if (authOverlay) authOverlay.style.display = 'none';
+    } else {
+      if (authOverlay) {
+        authOverlay.style.display = 'flex';
+        if (passwordInput) {
+          passwordInput.value = '';
+          passwordInput.focus();
+        }
+      }
+    }
+  }
+
+  if (authForm) {
+    authForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const entered = (passwordInput ? passwordInput.value : '').trim();
+      if (entered === ADMIN_PASSWORD) {
+        sessionStorage.setItem('eee_fest_admin_auth', 'authenticated');
+        if (authError) authError.style.display = 'none';
+        if (authOverlay) authOverlay.style.display = 'none';
+      } else {
+        if (authError) authError.style.display = 'block';
+        if (passwordInput) {
+          passwordInput.value = '';
+          passwordInput.focus();
+        }
+      }
+    });
+  }
+
+  if (adminLockBtn) {
+    adminLockBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('eee_fest_admin_auth');
+      checkAdminAuth();
+    });
+  }
+
+  checkAdminAuth();
+
   // DOM Elements - Mode
   const btnMode1 = document.getElementById('btnMode1');
   const btnMode2 = document.getElementById('btnMode2');

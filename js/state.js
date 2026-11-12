@@ -59,24 +59,33 @@ class GameStateManager {
     return n === 'ready player' || 
            n === 'contestant 1' || 
            n === 'waiting for player' || 
+           n === 'stage open' ||
            n === 'player' || 
            n === 'champion' ||
            n === 'none' ||
            id === '231-15-0000' ||
            id === '231-15-0001' ||
            id === 'scan qr to join' ||
+           id === 'scan qr to enter' ||
            id === '';
   }
 
   // Ensures the top person in queue automatically takes the stage if stage is vacant/idle
   ensureStageReady() {
-    if (this.isDefaultPlaceholder(this.state.activePlayer) && this.state.queue.length > 0) {
-      this.state.activePlayer = this.state.queue.shift();
-      this.saveToStorage();
-      this.emit('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
-      this.emit('QUEUE_UPDATED', { queue: this.state.queue });
-      this.emit('state_changed', this.state);
-      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+    if (this.isDefaultPlaceholder(this.state.activePlayer)) {
+      if (this.state.queue.length > 0) {
+        this.state.activePlayer = this.state.queue.shift();
+        this.saveToStorage();
+        this.emit('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
+        this.emit('QUEUE_UPDATED', { queue: this.state.queue });
+        this.emit('state_changed', this.state);
+        const sync = window.firebaseSync || window.cloudSync;
+        if (sync && typeof sync.syncCurrentQueue === 'function') {
+          sync.syncCurrentQueue();
+        }
+      } else {
+        this.state.activePlayer = null;
+      }
     }
   }
 
@@ -268,19 +277,23 @@ class GameStateManager {
     if (this.state.queue.length > 0) {
       const next = this.state.queue.shift();
       this.state.activePlayer = next;
+      this.saveToStorage();
       this.broadcast('ACTIVE_PLAYER_CHANGED', { player: next });
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+      const sync = window.firebaseSync || window.cloudSync;
+      if (sync && typeof sync.syncCurrentQueue === 'function') {
+        sync.syncCurrentQueue();
+      }
       return next;
     } else {
-      this.state.activePlayer = {
-        name: "Waiting for Player",
-        studentId: "Scan QR to Join",
-        department: "EEE Fest"
-      };
-      this.broadcast('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
+      this.state.activePlayer = null;
+      this.saveToStorage();
+      this.broadcast('ACTIVE_PLAYER_CHANGED', { player: null });
       this.broadcast('QUEUE_UPDATED', { queue: [] });
-      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+      const sync = window.firebaseSync || window.cloudSync;
+      if (sync && typeof sync.syncCurrentQueue === 'function') {
+        sync.syncCurrentQueue();
+      }
       return null;
     }
   }
@@ -288,8 +301,12 @@ class GameStateManager {
   removePlayerFromQueue(index) {
     if (index >= 0 && index < this.state.queue.length) {
       const removed = this.state.queue.splice(index, 1)[0];
+      this.saveToStorage();
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+      const sync = window.firebaseSync || window.cloudSync;
+      if (sync && typeof sync.syncCurrentQueue === 'function') {
+        sync.syncCurrentQueue();
+      }
       return removed;
     }
     return null;
@@ -300,15 +317,23 @@ class GameStateManager {
         toIndex >= 0 && toIndex < this.state.queue.length) {
       const item = this.state.queue.splice(fromIndex, 1)[0];
       this.state.queue.splice(toIndex, 0, item);
+      this.saveToStorage();
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+      const sync = window.firebaseSync || window.cloudSync;
+      if (sync && typeof sync.syncCurrentQueue === 'function') {
+        sync.syncCurrentQueue();
+      }
     }
   }
 
   clearQueue() {
     this.state.queue = [];
+    if (this.state.status !== 'PLAYING') {
+      this.state.activePlayer = null;
+    }
     this.saveToStorage();
     this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
+    this.broadcast('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
     const sync = window.firebaseSync || window.cloudSync;
     if (sync && typeof sync.syncCurrentQueue === 'function') {
       sync.syncCurrentQueue();

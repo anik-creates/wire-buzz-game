@@ -97,11 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const activePlayerAvatar = document.getElementById('activePlayerAvatar');
 
     if (activePlayerAvatar) {
-      activePlayerAvatar.textContent = (!isPlaceholder && p && p.name) ? p.name.charAt(0).toUpperCase() : "?";
+      activePlayerAvatar.textContent = (!isPlaceholder && p && p.name) ? p.name.charAt(0).toUpperCase() : "⚡";
     }
 
     if (activePlayerName) {
-      activePlayerName.textContent = (!isPlaceholder && p && p.name) ? p.name : "WAITING FOR PLAYER";
+      activePlayerName.textContent = (!isPlaceholder && p && p.name) ? p.name.toUpperCase() : "STAGE OPEN";
     }
 
     if (activePlayerId) {
@@ -112,11 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (state.state.status === 'PLAYING') {
         activePlayerStatus.textContent = "⚡ IN ARENA";
         activePlayerStatus.style.color = "var(--fest-cyan)";
-      } else if (!isPlaceholder) {
+      } else if (!isPlaceholder && p) {
         activePlayerStatus.textContent = "⚡ ON STAGE (READY)";
         activePlayerStatus.style.color = "var(--fest-green)";
       } else {
-        activePlayerStatus.textContent = "⚡ STAGE OPEN";
+        activePlayerStatus.textContent = "⚡ WAITING FOR PLAYER";
         activePlayerStatus.style.color = "var(--fest-gold)";
       }
     }

@@ -100,19 +100,19 @@ body.fest-body {
   transform: scale(1.04);
 }
 .fest-brand-logo.pes-logo {
-  height: 68px;
-  max-height: 74px;
-  filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.45));
+  height: 82px;
+  max-height: 90px;
+  filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.55));
 }
 .fest-brand-logo.pes-logo:hover {
   transform: scale(1.06);
-  filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.75));
+  filter: drop-shadow(0 0 28px rgba(0, 229, 255, 0.85));
 }
 
 .fest-brand-divider {
   width: 1px;
-  height: 36px;
-  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  height: 48px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.25), transparent);
 }
 
 .fest-title-text h1 {
@@ -303,6 +303,7 @@ body.fest-body {
   gap: 7px;
   overflow-y: auto;
   padding-right: 4px;
+  flex: 1;
 }
 
 .left-lb-item {
@@ -2146,4 +2147,163 @@ body.fest-body {
 .mobile-logo-img.pes-logo {
   height: 62px;
   filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.5));
+}
+
+/* ==========================================================================
+   LEFT RAIL FOOTER LOGO LOCKED AT THE BOTTOM
+   ========================================================================== */
+
+.left-rail-footer-logo-wrap {
+  margin-top: auto;
+  padding: 10px 8px 4px 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(10, 10, 14, 0.5);
+  border-radius: 8px;
+}
+
+.left-rail-footer-logo-img {
+  max-width: 100%;
+  max-height: 58px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(245, 166, 35, 0.25));
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.left-rail-footer-logo-img:hover {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 18px rgba(245, 166, 35, 0.5));
+}
+
+/* ==========================================================================
+   ADMIN AUTHENTICATION SECURITY GATE (Password: eeefestadmin)
+   ========================================================================== */
+
+.admin-auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 12, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.admin-auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: linear-gradient(145deg, rgba(20, 20, 28, 0.98), rgba(12, 12, 18, 0.99));
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 166, 35, 0.15);
+  border-radius: 16px;
+  padding: 32px 28px;
+  text-align: center;
+  animation: fadeInAuth 0.3s ease-out;
+}
+
+@keyframes fadeInAuth {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.admin-auth-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.auth-fest-logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.auth-pes-logo {
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.55));
+}
+
+.admin-auth-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(255, 23, 68, 0.15);
+  border: 1px solid rgba(255, 23, 68, 0.4);
+  color: #ff5252;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.admin-auth-card h2 {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.admin-auth-card p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 22px;
+}
+
+.admin-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-auth-input-wrap {
+  width: 100%;
+}
+
+.admin-auth-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  text-align: center;
+  letter-spacing: 0.15em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.admin-auth-input:focus {
+  border-color: var(--fest-gold);
+  box-shadow: 0 0 16px rgba(245, 166, 35, 0.35);
+}
+
+.admin-auth-error {
+  color: #ff5252;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  background: rgba(255, 23, 68, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 23, 68, 0.25);
+}
+
+.admin-auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
 }
