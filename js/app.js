@@ -14,8 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const timerMillis = document.getElementById('timerMillis');
   const activePlayerName = document.getElementById('activePlayerName');
   const activePlayerId = document.getElementById('activePlayerId');
-  const activePlayerDept = document.getElementById('activePlayerDept');
-  const activePlayerAvatar = document.getElementById('activePlayerAvatar');
   const activePlayerStatus = document.getElementById('activePlayerStatus');
   
   const modeBadge = document.getElementById('modeBadge');
@@ -42,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let confettiParticles = [];
   let confettiAnimationId = null;
 
-  // Animation Frame Stopwatch
+  // Stopwatch Controller
   let stopwatchRunning = false;
   let startTime = 0;
   let elapsedMs = 0;
@@ -56,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 1000);
 
-  // Resize Confetti Canvas
   function resizeConfetti() {
     if (confettiCanvas) {
       confettiCanvas.width = window.innerWidth;
@@ -66,45 +63,51 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', resizeConfetti);
   resizeConfetti();
 
-  // ========================== RENDER FUNCTIONS ==============================
+  // ========================== RENDERING =====================================
 
   function renderActivePlayer() {
-    const p = state.state.activePlayer || { name: "Ready", studentId: "Scan QR", department: "EEE" };
-    activePlayerName.textContent = p.name;
-    activePlayerId.textContent = p.studentId;
-    activePlayerDept.textContent = p.department || "DIU EEE";
-    activePlayerAvatar.textContent = p.name.charAt(0).toUpperCase();
+    const p = state.state.activePlayer || { name: "Contestant 1", studentId: "231-15-0000" };
+    if (activePlayerName) activePlayerName.textContent = p.name;
+    if (activePlayerId) activePlayerId.textContent = p.studentId;
 
-    if (state.state.status === 'PLAYING') {
-      activePlayerStatus.textContent = "IN GAME";
-      activePlayerStatus.style.color = "var(--fest-cyan)";
-    } else {
-      activePlayerStatus.textContent = "ON DECK";
-      activePlayerStatus.style.color = "var(--fest-green)";
+    if (activePlayerStatus) {
+      if (state.state.status === 'PLAYING') {
+        activePlayerStatus.textContent = "IN ARENA";
+        activePlayerStatus.style.color = "var(--fest-cyan)";
+      } else {
+        activePlayerStatus.textContent = "ON DECK";
+        activePlayerStatus.style.color = "var(--fest-green)";
+      }
     }
   }
 
   function renderMode() {
     const isMode1 = state.state.mode === 1;
     if (isMode1) {
-      modeBadge.className = "badge-mode mode-sudden-death";
-      modeBadge.innerHTML = `<span class="dot-indicator connected" style="background:#ff1744;box-shadow:0 0 10px #ff1744"></span> Mode 1: Sudden Death`;
-      modeHeadline.textContent = "⚡ MODE 1: ONE TOUCH = GAME OVER";
+      if (modeBadge) {
+        modeBadge.className = "fest-mode-pill mode-sudden-death";
+        modeBadge.innerHTML = `<span class="pulse-dot red-pulse"></span> Mode 1: Sudden Death`;
+      }
+      if (modeHeadline) modeHeadline.textContent = "⚡ MODE 1: ONE TOUCH = INSTANT KNOCKOUT";
       if (touchStatBox) touchStatBox.style.display = 'none';
     } else {
-      modeBadge.className = "badge-mode mode-multi-touch";
-      modeBadge.innerHTML = `<span class="dot-indicator connected" style="background:#f5a623;box-shadow:0 0 10px #f5a623"></span> Mode 2: Touch Master`;
-      modeHeadline.textContent = "🎯 MODE 2: MULTI-TOUCH & PRECISION SCORING";
+      if (modeBadge) {
+        modeBadge.className = "fest-mode-pill mode-multi-touch";
+        modeBadge.innerHTML = `<span class="pulse-dot connected" style="background:var(--fest-gold)"></span> Mode 2: Touch Master`;
+      }
+      if (modeHeadline) modeHeadline.textContent = "🎯 MODE 2: MULTI-TOUCH & PRECISION SCORING";
       if (touchStatBox) touchStatBox.style.display = 'flex';
     }
   }
 
   function renderQueue() {
     const q = state.state.queue;
-    queueCount.textContent = `${q.length} in queue`;
+    if (queueCount) queueCount.textContent = `${q.length} in queue`;
+
+    if (!queueList) return;
 
     if (q.length === 0) {
-      queueList.innerHTML = `<div class="empty-queue-msg">No players waiting. Scan the QR code to take the stage!</div>`;
+      queueList.innerHTML = `<div class="empty-queue-msg">Queue empty. Scan QR to take the stage!</div>`;
       return;
     }
 
@@ -114,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="queue-index-bubble">#${idx + 1}</div>
           <div class="queue-player-details">
             <div class="q-name">${escapeHtml(p.name)}</div>
-            <div class="q-id">${escapeHtml(p.studentId)} • ${escapeHtml(p.department || 'EEE')}</div>
+            <div class="q-id">${escapeHtml(p.studentId)}</div>
           </div>
         </div>
       </div>
@@ -202,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderActivePlayer();
 
-    // Signal ESP32 over serial
+    // Signal ESP32
     const p = state.state.activePlayer;
     serial.startHardwareGame(state.state.mode, p.name, p.studentId);
   }
@@ -213,17 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
     state.state.currentMatch.touches = touchCount;
     if (touchCounter) touchCounter.textContent = touchCount;
 
-    // Pulse animation
     if (touchStatBox) {
       touchStatBox.classList.add('pulse-touch');
       setTimeout(() => touchStatBox.classList.remove('pulse-touch'), 300);
     }
 
     if (state.state.mode === 1) {
-      // Sudden Death: One Touch = Game Over
       triggerGameOver("TOUCH");
     } else {
-      // Mode 2: Multi-Touch audio alert
       sound.playTouchBuzz(180);
     }
   }
@@ -239,21 +239,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const finalElapsed = elapsedMs;
     const finalTouches = state.state.currentMatch.touches;
 
-    // Record in history & save
     const record = state.recordMatchResult('GAMEOVER', {
       elapsedMs: finalElapsed,
       touches: finalTouches,
       reason: reason
     });
 
-    // Notify ESP32
     serial.stopHardwareGame();
 
-    // Sound and TTS
     sound.playGameOverFail();
     sound.announceGameOver(p.name, (finalElapsed / 1000).toFixed(1), state.state.mode);
 
-    // Populate Game Over Overlay
     document.getElementById('goPlayerName').textContent = p.name;
     document.getElementById('goTime').textContent = `${(finalElapsed / 1000).toFixed(2)}s`;
     document.getElementById('goTouches').textContent = finalTouches;
@@ -261,23 +257,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gameoverOverlay.style.display = 'flex';
 
-    // Transition to Intermission Leaderboard after 4.5 seconds
     setTimeout(() => {
       gameoverOverlay.style.display = 'none';
       showIntermissionLeaderboard();
     }, 4500);
   }
 
+  // Finish Line Trigger (Now works in PLAYING and provides instant feedback in IDLE)
   function triggerVictory() {
-    if (state.state.status !== 'PLAYING') return;
-
+    const isPlaying = (state.state.status === 'PLAYING');
+    
     stopwatchRunning = false;
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     state.state.status = 'FINISHED';
 
-    const p = state.state.activePlayer;
-    const finalElapsed = elapsedMs;
-    const finalTouches = state.state.currentMatch.touches;
+    const p = state.state.activePlayer || { name: "Champion", studentId: "Contestant" };
+    const finalElapsed = isPlaying ? elapsedMs : 12450;
+    const finalTouches = isPlaying ? state.state.currentMatch.touches : 0;
 
     const record = state.recordMatchResult('FINISHED', {
       elapsedMs: finalElapsed,
@@ -286,12 +282,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     serial.sendCommand('FINISH');
 
-    // Confetti and Cheering Claps
     sound.playCelebrationClaps(5.0);
     sound.announceVictory(p.name, record.score, finalTouches, (finalElapsed / 1000).toFixed(1));
     startConfetti();
 
-    // Populate Victory Overlay
     document.getElementById('vicPlayerName').textContent = p.name;
     document.getElementById('vicScore').textContent = record.score.toLocaleString();
     document.getElementById('vicTime').textContent = `${(finalElapsed / 1000).toFixed(2)}s`;
@@ -299,7 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     victoryOverlay.style.display = 'flex';
 
-    // Transition to Leaderboard after 5.5 seconds
     setTimeout(() => {
       stopConfetti();
       victoryOverlay.style.display = 'none';
@@ -327,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(countdownTimer);
         leaderboardOverlay.style.display = 'none';
         
-        // Advance to next player
         const nextPlayer = state.advanceToNextPlayer();
         resetStage();
         if (nextPlayer) {
@@ -344,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('podiumRank3')
     ];
 
-    // Top 3 Podium
     podiumSlots.forEach((slot, i) => {
       if (!slot) return;
       const l = leaders[i];
@@ -359,12 +350,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Mini Table for 4th-10th
     const tbody = document.getElementById('leaderboardMiniBody');
     if (!tbody) return;
 
     if (leaders.length <= 3) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">More scores will appear here as players compete!</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">More scores will appear here as matches complete!</td></tr>`;
       return;
     }
 
@@ -374,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><strong>${escapeHtml(l.playerName)}</strong></td>
         <td>${escapeHtml(l.studentId)}</td>
         <td>${(l.elapsedMs / 1000).toFixed(2)}s</td>
-        <td style="color:var(--fest-cyan);font-weight:700">${(state.state.mode === 1) ? `${(l.elapsedMs / 1000).toFixed(2)}s` : `${l.score} pts`}</td>
+        <td style="color:var(--fest-gold);font-weight:700">${(state.state.mode === 1) ? `${(l.elapsedMs / 1000).toFixed(2)}s` : `${l.score} pts`}</td>
       </tr>
     `).join('');
   }
@@ -396,14 +386,14 @@ document.addEventListener('DOMContentLoaded', () => {
     serial.resetHardwareGame();
   }
 
-  // ========================== CONFETTI ENGINE ===============================
+  // ========================== CONFETTI ======================================
 
   function startConfetti() {
     if (!confettiCtx) return;
     confettiParticles = [];
-    const colors = ['#f5a623', '#00e5ff', '#ff1744', '#00f59b', '#7928ca', '#ffffff'];
+    const colors = ['#f5a623', '#00e5ff', '#ff1744', '#00e676', '#ffffff'];
 
-    for (let i = 0; i < 140; i++) {
+    for (let i = 0; i < 150; i++) {
       confettiParticles.push({
         x: Math.random() * confettiCanvas.width,
         y: Math.random() * -confettiCanvas.height,
@@ -448,14 +438,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ========================== HARDWARE TOAST FEEDBACK ======================
+
+  function showToast(msg) {
+    const toast = document.getElementById('hardwareToast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    if (window._toastTimeout) clearTimeout(window._toastTimeout);
+    window._toastTimeout = setTimeout(() => {
+      toast.style.display = 'none';
+    }, 2200);
+  }
+
   // ========================== SERIAL EVENT BINDINGS =========================
 
   serial.on('connection_changed', (data) => {
     if (data.connected) {
-      comStatusDot.className = "dot-indicator connected";
+      comStatusDot.className = "pulse-dot connected";
       comStatusText.textContent = "ESP32 Connected";
+      showToast("✓ ESP32 Connected on COM Port");
     } else {
-      comStatusDot.className = "dot-indicator";
+      comStatusDot.className = "pulse-dot";
       comStatusText.textContent = "Connect COM";
     }
   });
@@ -468,8 +472,25 @@ document.addEventListener('DOMContentLoaded', () => {
     triggerGameOver(data.reason || "TOUCH");
   });
 
+  // Finish Line Event Handler (From ESP32)
   serial.on('FINISH', () => {
     triggerVictory();
+  });
+
+  serial.on('FINISH_TRIGGERED', () => {
+    if (state.state.status === 'PLAYING') {
+      triggerVictory();
+    } else {
+      showToast("✓ Finish Pad Contact Tested (GPIO 6 OK)");
+    }
+  });
+
+  serial.on('FINISH_TEST', () => {
+    showToast("✓ Finish Pad Contact Tested (GPIO 6 OK)");
+  });
+
+  serial.on('TOUCH_TEST', () => {
+    showToast("⚡ Wire Track Contact Tested (GPIO 4 OK)");
   });
 
   comStatusPill.addEventListener('click', () => {
@@ -480,10 +501,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ========================== KEYBOARD & SPACEBAR ===========================
+  // ========================== KEYBOARD & REMOTE TRIGGERS ====================
 
   window.addEventListener('keydown', (e) => {
-    // Ignore input if inside text fields
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
     if (e.code === 'Space') {
@@ -492,75 +512,71 @@ document.addEventListener('DOMContentLoaded', () => {
         startCountdownSequence();
       }
     } else if (e.code === 'KeyT') {
-      // Simulate Touch
       handleTouchDetected(state.state.currentMatch.touches + 1);
     } else if (e.code === 'KeyF') {
-      // Simulate Finish
       triggerVictory();
     } else if (e.code === 'KeyR') {
-      // Reset Stage
       resetStage();
     } else if (e.code === 'KeyM') {
-      // Toggle Mode
       const newMode = (state.state.mode === 1) ? 2 : 1;
       state.setMode(newMode);
     }
   });
 
-  // Start CTA click
+  // Remote Admin Broadcast Listeners
+  state.on('TRIGGER_START_COUNTDOWN', () => {
+    startCountdownSequence();
+  });
+
+  state.on('TRIGGER_FINISH', () => {
+    triggerVictory();
+  });
+
+  state.on('TRIGGER_GAME_OVER', (data) => {
+    triggerGameOver(data ? data.reason : "STOPPED_BY_ADMIN");
+  });
+
+  state.on('TRIGGER_RESET', () => {
+    resetStage();
+  });
+
   const startCtaBanner = document.getElementById('startCtaBanner');
   if (startCtaBanner) {
     startCtaBanner.addEventListener('click', startCountdownSequence);
   }
 
-  // State Change Listener
   state.on('state_changed', () => {
     renderActivePlayer();
     renderMode();
     renderQueue();
   });
 
-  state.on('MODE_CHANGED', () => {
-    renderMode();
-  });
+  state.on('MODE_CHANGED', () => renderMode());
+  state.on('ACTIVE_PLAYER_CHANGED', () => renderActivePlayer());
+  state.on('QUEUE_UPDATED', () => renderQueue());
 
-  state.on('ACTIVE_PLAYER_CHANGED', () => {
-    renderActivePlayer();
-  });
-
-  state.on('QUEUE_UPDATED', () => {
-    renderQueue();
-  });
-
-  // Initial Renders
   renderActivePlayer();
   renderMode();
   renderQueue();
   formatTime(0);
 
-  // Generate dynamic QR Code for phone scanning
   initQrCode();
 });
 
-// Pure JS QR Code Generator fallback (zero external CDN dependency)
 function initQrCode() {
   const qrContainer = document.getElementById('qrCodeImage');
   if (!qrContainer) return;
 
-  // Compute registration URL
   const currentHost = window.location.origin + window.location.pathname.replace(/index\.html$/, '');
   const registerUrl = currentHost + (currentHost.endsWith('/') ? '' : '/') + 'register.html';
   
-  // Update link text
   const linkEl = document.getElementById('qrLinkDirect');
   if (linkEl) {
     linkEl.href = registerUrl;
     linkEl.textContent = "Open Registration Page ↗";
   }
 
-  // Generate QR code using Google Chart API or SVG QR image for crystal clear scanning
-  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(registerUrl)}`;
-  
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(registerUrl)}`;
   const img = new Image();
   img.src = qrApiUrl;
   img.alt = "Scan to Register";
@@ -574,10 +590,9 @@ function initQrCode() {
   };
 
   img.onerror = () => {
-    // Fallback if offline
     qrContainer.innerHTML = `
       <div style="font-size:0.75rem;padding:12px;background:#fff;color:#000;border-radius:8px;font-family:monospace;word-break:break-all;">
-        <strong>OFFLINE ACCESS:</strong><br>${registerUrl}
+        ${registerUrl}
       </div>
     `;
   };

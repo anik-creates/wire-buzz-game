@@ -3,21 +3,22 @@
  * EEE Fest 2026 - Wire Buzz Game Controller (Direct Wire Mode)
  * Organized by IEEE PES DIU SBC
  * 
- * Direct Wire Configuration (NO Resistors, NO Capacitors - Wires Only!):
- * - Bent Wire Track : Connected directly to ESP32 GND
- * - Player Wand/Loop: Connected directly to ESP32 GPIO 4 (Internal INPUT_PULLUP)
- * - Finish Line Pad : Connected directly to ESP32 GPIO 6 (Internal INPUT_PULLUP)
- * - Buzzer          : Connected directly to ESP32 GPIO 7 (+) and GND (-)
+ * Hardware Wiring (NO Resistors, NO Capacitors - ONLY WIRES!):
+ * - Player Wand/Loop : Connected directly to ESP32 GND (Moving ground contact)
+ * - Bent Wire Track  : Connected directly to ESP32 GPIO 4 (Internal INPUT_PULLUP)
+ * - Finish Line Pad  : Connected directly to ESP32 GPIO 6 (Internal INPUT_PULLUP)
+ * - Buzzer           : Connected directly to ESP32 GPIO 7 (+) and GND (-)
+ * - Status LED       : GPIO 8
  * ============================================================================
  */
 
 #include <Arduino.h>
 
 // Direct-wire pin definitions
-static const uint8_t PIN_WIRE_TOUCH = 4;  // Loop wand (Active LOW against grounded track)
-static const uint8_t PIN_FINISH_PAD = 6;  // Finish line gate (Active LOW against grounded track/wand)
-static const uint8_t PIN_BUZZER     = 7;  // Buzzer output (PWM or Active High)
-static const uint8_t PIN_STATUS_LED = 8;  // Visual Indicator
+static const uint8_t PIN_WIRE_TOUCH = 4;  // Bent Wire Track (INPUT_PULLUP, touched by grounded wand)
+static const uint8_t PIN_FINISH_PAD = 6;  // Finish Line Contact (INPUT_PULLUP, touched by grounded wand)
+static const uint8_t PIN_BUZZER     = 7;  // Buzzer Output (PWM or Active High)
+static const uint8_t PIN_STATUS_LED = 8;  // Visual Game Status Indicator
 
 // PWM configuration for Buzzer
 static const uint8_t  BUZZER_PWM_CHANNEL = 0;
@@ -155,12 +156,17 @@ void triggerGameOver(const String& reason = "TOUCH") {
 }
 
 void triggerFinish() {
-  if (currentState != STATE_PLAYING) return;
-  gameEndTime = millis();
+  uint32_t elapsed = 0;
+  if (currentState == STATE_PLAYING) {
+    gameEndTime = millis();
+    elapsed = gameEndTime - gameStartTime;
+  } else {
+    elapsed = 15000;
+  }
+  
   currentState = STATE_FINISHED;
   digitalWrite(PIN_STATUS_LED, LOW);
 
-  uint32_t elapsed = gameEndTime - gameStartTime;
   int32_t score = 10000 - ((int32_t)totalTouchCount * 500) - ((int32_t)elapsed / 10);
   if (score < 0) score = 0;
 
@@ -291,11 +297,13 @@ void setup() {
   Serial.begin(115200);
   delay(400);
 
-  // Direct Wire Setup: Enable ESP32 Internal Pull-Up Resistors
+  // Direct Wire Setup:
+  // Wand is GND (held by player).
+  // Wire track is GPIO 4 (INPUT_PULLUP).
+  // Finish line is GPIO 6 (INPUT_PULLUP).
   pinMode(PIN_WIRE_TOUCH, INPUT_PULLUP);
   pinMode(PIN_FINISH_PAD, INPUT_PULLUP);
 
-  // Output setup
   pinMode(PIN_STATUS_LED, OUTPUT);
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_STATUS_LED, LOW);
@@ -307,7 +315,7 @@ void setup() {
   buzzerOff();
 
   // Boot announcement
-  sendJson("READY", "\"device\":\"ESP32-S3-WIRE-BUZZ\",\"mode\":\"DIRECT_WIRE\",\"touch_pin\":4,\"finish_pin\":6,\"buzzer_pin\":7");
+  sendJson("READY", "\"device\":\"ESP32-S3-WIRE-BUZZ\",\"wand\":\"GND\",\"track\":4,\"finish\":6,\"buzzer\":7");
 }
 
 void loop() {
@@ -324,14 +332,26 @@ void loop() {
     buzzerOff();
   }
 
-  // 3. Game Play Direct Wire Touch Detection
-  if (currentState == STATE_PLAYING) {
-    // Read raw wire state: Bent wire is GND, loop wand is GPIO 4 (INPUT_PULLUP)
-    int touchState = digitalRead(PIN_WIRE_TOUCH);
+  // 3. Finish Line Detection on GPIO 6 (Active-Low with Internal Pull-up)
+  static uint32_t lastFinishTriggerTime = 0;
+  if (digitalRead(PIN_FINISH_PAD) == LOW) {
+    if (now - lastFinishTriggerTime >= 200) {
+      lastFinishTriggerTime = now;
+      if (currentState == STATE_PLAYING) {
+        triggerFinish();
+      } else {
+        // Immediate auditory & serial confirmation for sensor testing in IDLE
+        buzzerOn(2800, 120);
+        sendJson("FINISH_TEST", "\"state\":\"FINISH_CONTACT_OK\",\"pin\":6");
+      }
+    }
+  }
 
-    if (touchState == LOW) {
-      // Wand touches the grounded wire!
-      if (!isCurrentlyTouching && (now - lastTouchDebounce >= 45)) {
+  // 4. Wire Touch Detection on GPIO 4 (Active-Low with Internal Pull-up)
+  static uint32_t lastTrackTestTime = 0;
+  if (digitalRead(PIN_WIRE_TOUCH) == LOW) {
+    if (currentState == STATE_PLAYING) {
+      if (!isCurrentlyTouching && (now - lastTouchDebounce >= 25)) {
         isCurrentlyTouching = true;
         lastTouchDebounce = now;
         totalTouchCount++;
@@ -341,28 +361,26 @@ void loop() {
         if (currentMode == MODE_SUDDEN_DEATH) {
           triggerGameOver("TOUCH");
         } else {
-          // Mode 2: Multi-Touch alert
-          buzzerOn(2400, 160);
+          // Mode 2: Multi-Touch pulse alert
+          buzzerOn(2400, 150);
           sendJson("TOUCH", "\"count\":" + String(totalTouchCount) + ",\"time_ms\":" + String(elapsed) + ",\"mode\":2");
         }
       }
     } else {
-      // Wand released
-      if (isCurrentlyTouching && (now - lastTouchDebounce >= 30)) {
-        isCurrentlyTouching = false;
+      // In IDLE: immediate auditory & serial confirmation that track wire works
+      if (now - lastTrackTestTime >= 250) {
+        lastTrackTestTime = now;
+        buzzerOn(1800, 80);
+        sendJson("TOUCH_TEST", "\"state\":\"TRACK_CONTACT_OK\",\"pin\":4");
       }
     }
-
-    // Check Finish Line Contact on GPIO 6 (Active LOW)
-    if (digitalRead(PIN_FINISH_PAD) == LOW) {
-      delay(15); // Confirm contact
-      if (digitalRead(PIN_FINISH_PAD) == LOW) {
-        triggerFinish();
-      }
+  } else {
+    if (isCurrentlyTouching && (now - lastTouchDebounce >= 20)) {
+      isCurrentlyTouching = false;
     }
   }
 
-  // 4. Heartbeat every 2000ms
+  // 5. Heartbeat every 2000ms
   if (now - lastHeartbeatTime >= 2000) {
     lastHeartbeatTime = now;
     if (currentState == STATE_IDLE) {

@@ -1,29 +1,26 @@
 /**
  * ============================================================================
- * EEE Fest 2026 - Wire Buzz Central State & Synchronizer
- * BroadcastChannel (Zero-Latency Multi-Window Sync) + LocalStorage + Cloud Sync
+ * EEE Fest 2026 - Central State & Sync Controller
  * ============================================================================
  */
 
 class GameStateManager {
   constructor() {
-    this.storageKey = 'eee_fest_wire_buzz_data_v2';
+    this.storageKey = 'eee_fest_wire_buzz_v3';
     this.channel = new BroadcastChannel('wire_buzz_channel');
     
-    // Default initial state
     this.state = {
-      mode: 1, // 1: Sudden Death, 2: Multi-Touch Precision Score
+      mode: 1, // 1: Sudden Death, 2: Multi-Touch Precision
       status: 'IDLE', // IDLE, COUNTDOWN, PLAYING, GAMEOVER, FINISHED, INTERMISSION
       activePlayer: {
-        name: "Anik Sarker",
-        studentId: "221-15-5432",
-        department: "EEE, DIU"
+        name: "Contestant 1",
+        studentId: "231-15-0001",
+        department: "EEE Fest"
       },
       queue: [
         { id: "q1", name: "Tanvir Ahmed", studentId: "223-15-9871", department: "EEE" },
         { id: "q2", name: "Nusrat Jahan", studentId: "231-15-4120", department: "EEE" },
-        { id: "q3", name: "Shahriar Kabir", studentId: "232-15-7741", department: "EEE" },
-        { id: "q4", name: "Farhana Islam", studentId: "222-15-3312", department: "EEE" }
+        { id: "q3", name: "Shahriar Kabir", studentId: "232-15-7741", department: "EEE" }
       ],
       currentMatch: {
         startTime: 0,
@@ -33,14 +30,13 @@ class GameStateManager {
         score: 0,
         reason: ""
       },
-      matchHistory: [],
-      intermissionTimer: 0
+      matchHistory: []
     };
 
     this.listeners = [];
     this.loadFromStorage();
 
-    // Listen for broadcast sync from other tabs (Admin, Presenter, Registration)
+    // BroadcastChannel sync
     this.channel.onmessage = (event) => {
       if (event.data && event.data.type) {
         this.handleBroadcastMessage(event.data);
@@ -63,13 +59,13 @@ class GameStateManager {
       const saved = localStorage.getItem(this.storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.queue) this.state.queue = parsed.queue;
+        if (parsed.queue && parsed.queue.length > 0) this.state.queue = parsed.queue;
         if (parsed.matchHistory) this.state.matchHistory = parsed.matchHistory;
         if (parsed.mode) this.state.mode = parsed.mode;
         if (parsed.activePlayer) this.state.activePlayer = parsed.activePlayer;
       }
     } catch (e) {
-      console.warn("Could not load from storage:", e);
+      console.warn("Storage load error:", e);
     }
   }
 
@@ -98,7 +94,7 @@ class GameStateManager {
 
     switch (type) {
       case 'QUEUE_UPDATED':
-        this.state.queue = payload.queue;
+        if (payload.queue) this.state.queue = payload.queue;
         break;
       case 'MODE_CHANGED':
         this.state.mode = payload.mode;
@@ -111,10 +107,19 @@ class GameStateManager {
         if (payload.match) this.state.currentMatch = payload.match;
         break;
       case 'MATCH_FINISHED':
-        this.state.matchHistory.unshift(payload.record);
+        if (payload.record) this.state.matchHistory.unshift(payload.record);
         break;
-      case 'SYNC_STATE':
-        this.state = { ...this.state, ...payload.state };
+      case 'TRIGGER_FINISH':
+        this.emit('TRIGGER_FINISH', payload);
+        break;
+      case 'TRIGGER_START_COUNTDOWN':
+        this.emit('TRIGGER_START_COUNTDOWN', payload);
+        break;
+      case 'TRIGGER_GAME_OVER':
+        this.emit('TRIGGER_GAME_OVER', payload);
+        break;
+      case 'TRIGGER_RESET':
+        this.emit('TRIGGER_RESET', payload);
         break;
     }
 
@@ -125,23 +130,34 @@ class GameStateManager {
 
   // ========================== QUEUE ACTIONS =================================
 
-  addPlayerToQueue(playerData) {
+  addPlayerToQueue(playerData, publishToCloud = true) {
     const player = {
       id: "p_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-      name: playerData.name.trim(),
-      studentId: playerData.studentId.trim(),
+      name: (playerData.name || "Contestant").trim(),
+      studentId: (playerData.studentId || "231-00-0000").trim(),
       department: playerData.department || "EEE",
       registeredAt: new Date().toLocaleTimeString()
     };
 
-    // If no active player, set as active
-    if (!this.state.activePlayer || !this.state.activePlayer.name) {
+    // Prevent duplicate entries
+    const exists = this.state.queue.some(p => p.studentId === player.studentId);
+    if (exists) {
+      return this.state.queue.find(p => p.studentId === player.studentId);
+    }
+
+    if (!this.state.activePlayer || !this.state.activePlayer.name || this.state.activePlayer.name === "Ready Player") {
       this.state.activePlayer = player;
       this.broadcast('ACTIVE_PLAYER_CHANGED', { player });
     } else {
       this.state.queue.push(player);
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
     }
+
+    // Publish to cloud MQTT if requested
+    if (publishToCloud && window.cloudSync) {
+      window.cloudSync.publishRegistration(player);
+    }
+
     return player;
   }
 
@@ -149,6 +165,7 @@ class GameStateManager {
     if (index >= 0 && index < this.state.queue.length) {
       const removed = this.state.queue.splice(index, 1)[0];
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
+      if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
       return removed;
     }
     return null;
@@ -160,6 +177,7 @@ class GameStateManager {
       const item = this.state.queue.splice(fromIndex, 1)[0];
       this.state.queue.splice(toIndex, 0, item);
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
+      if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
     }
   }
 
@@ -169,6 +187,7 @@ class GameStateManager {
       this.state.activePlayer = next;
       this.broadcast('ACTIVE_PLAYER_CHANGED', { player: next });
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
+      if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
       return next;
     } else {
       this.state.activePlayer = {
@@ -184,9 +203,8 @@ class GameStateManager {
   clearQueue() {
     this.state.queue = [];
     this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
+    if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
   }
-
-  // ========================== MODE SWITCHING ================================
 
   setMode(modeNumber) {
     if (modeNumber === 1 || modeNumber === 2) {
@@ -195,33 +213,29 @@ class GameStateManager {
     }
   }
 
-  // ========================== MATCH SCORING =================================
-
   recordMatchResult(status, details) {
     const elapsed = details.elapsedMs || 0;
     const touches = details.touches || 0;
 
-    // Mode 2 formula: 10000 - (touches * 500) - (timeMs / 10)
     let score = 0;
     if (this.state.mode === 2) {
       score = Math.max(0, 10000 - (touches * 500) - Math.floor(elapsed / 10));
     } else {
-      // Mode 1: Survival time in points or 5000 bonus if finished
       score = (status === 'FINISHED') ? (5000 + Math.floor(elapsed / 100)) : Math.floor(elapsed / 10);
     }
 
     const record = {
       id: "m_" + Date.now(),
-      playerName: this.state.activePlayer.name,
-      studentId: this.state.activePlayer.studentId,
-      department: this.state.activePlayer.department,
+      playerName: this.state.activePlayer ? this.state.activePlayer.name : "Player",
+      studentId: this.state.activePlayer ? this.state.activePlayer.studentId : "",
+      department: this.state.activePlayer ? this.state.activePlayer.department : "EEE",
       mode: this.state.mode,
-      status: status, // GAMEOVER or FINISHED
+      status: status,
       elapsedMs: elapsed,
       touches: touches,
       score: score,
       reason: details.reason || "TOUCH",
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date().toLocaleTimeString()
     };
 
     this.state.matchHistory.unshift(record);
@@ -229,17 +243,13 @@ class GameStateManager {
     return record;
   }
 
-  // ========================== LEADERBOARDS ==================================
-
   getLeaderboard(mode = null) {
     const targetMode = mode || this.state.mode;
     let list = this.state.matchHistory.filter(m => m.mode === targetMode);
 
     if (targetMode === 1) {
-      // Mode 1: Sorted by longest survival time
       list.sort((a, b) => b.elapsedMs - a.elapsedMs);
     } else {
-      // Mode 2: Sorted by highest score, then least touches, then fastest time
       list.sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         if (a.touches !== b.touches) return a.touches - b.touches;
@@ -247,10 +257,8 @@ class GameStateManager {
       });
     }
 
-    return list.slice(0, 10); // Top 10
+    return list.slice(0, 10);
   }
-
-  // ========================== DATA EXPORT ===================================
 
   exportToCsv() {
     if (this.state.matchHistory.length === 0) {
@@ -293,5 +301,4 @@ class GameStateManager {
   }
 }
 
-// Global Singleton
 window.gameState = new GameStateManager();

@@ -7,196 +7,196 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/png" href="assets/eee-fest-logo.png">
 </head>
-<body>
-  <div class="app-container">
+<body class="fest-body">
+  <div class="fest-canvas">
     
-    <!-- Minimal Header Bar -->
-    <header class="header-bar">
-      <div class="branding-group">
-        <div class="logos-container">
-          <!-- Backgroundless EEE Fest Logo -->
-          <img src="assets/eee-fest-logo.png" alt="EEE Fest 2026" class="brand-logo-img" title="EEE Fest 2026">
-          <div class="logo-divider"></div>
+    <!-- Minimalist Fest Floating Navbar (No Cards) -->
+    <header class="fest-navbar">
+      <div class="fest-branding">
+        <div class="fest-logos">
+          <!-- Backgroundless EEE Fest 2026 Logo -->
+          <img src="assets/eee-fest-logo.png" alt="EEE Fest 2026" class="fest-brand-logo" title="EEE Fest 2026">
+          <div class="fest-brand-divider"></div>
           <!-- Backgroundless IEEE PES DIU SBC Logo -->
-          <img src="assets/ieee-pes-diu-logo.png" alt="IEEE PES DIU SBC" class="brand-logo-img" title="Organized by IEEE PES DIU SBC">
-          <div class="logo-divider"></div>
-          <!-- Backgroundless Technical Partner Logo -->
-          <img src="assets/technical-partner-logo.png" alt="Technical Partner" class="brand-logo-img" title="Technical Partner: IEEE Computer Society Bangladesh Chapter" style="height: 36px;">
+          <img src="assets/ieee-pes-diu-logo.png" alt="IEEE PES DIU SBC" class="fest-brand-logo" title="Organized by IEEE PES DIU SBC">
         </div>
 
-        <div class="brand-text">
-          <h1>Wire Buzz Arena</h1>
-          <p>Organized by IEEE PES DIU SBC • Technical Partner: IEEE CS BDC</p>
+        <div class="fest-title-text">
+          <h1>WIRE BUZZ ARENA</h1>
+          <p>EEE Fest 2026 • Organized by IEEE PES DIU SBC</p>
         </div>
       </div>
 
-      <div class="header-widgets">
-        <div id="modeBadge" class="badge-mode mode-sudden-death">
-          <span class="dot-indicator connected" style="background:#ff1744"></span> Mode 1: Sudden Death
+      <div class="fest-nav-widgets">
+        <div id="modeBadge" class="fest-mode-pill mode-sudden-death">
+          <span class="pulse-dot red-pulse"></span> Mode 1: Sudden Death
         </div>
 
-        <div id="comStatusPill" class="status-pill" title="Click to connect ESP32 over COM port">
-          <span id="comStatusDot" class="dot-indicator"></span>
+        <div id="cloudSyncPill" class="fest-status-pill" title="Cross-device cloud registration status">
+          <span id="cloudSyncDot" class="pulse-dot"></span>
+          <span id="cloudSyncText">Cloud Syncing...</span>
+        </div>
+
+        <div id="comStatusPill" class="fest-status-pill" title="Click to connect ESP32 over COM port">
+          <span id="comStatusDot" class="pulse-dot"></span>
           <span id="comStatusText">Connect COM</span>
         </div>
 
-        <div id="liveClock" class="clock-display">00:00:00</div>
+        <div id="liveClock" class="fest-clock">00:00:00</div>
       </div>
     </header>
 
-    <!-- Main Projector Presentation Grid -->
-    <main class="presentation-grid">
+    <!-- Main Projector Arena Layout (Open Canvas, No Cards) -->
+    <main class="fest-stage-grid">
       
-      <!-- Arena Stage -->
-      <section class="arena-stage">
+      <!-- Center Arena Space -->
+      <section class="fest-arena-core">
         
-        <!-- Active Player Spotlight Card -->
-        <div class="player-spotlight-card">
-          <div class="player-info-wrap">
-            <div id="activePlayerAvatar" class="player-avatar-ring">P</div>
-            <div class="player-meta">
+        <!-- Active Contestant Stage Spotlight (Floating HUD Ribbon, No Card) -->
+        <div class="fest-player-spotlight">
+          <div class="player-hud-identity">
+            <div id="activePlayerAvatar" class="player-hud-ring">P</div>
+            <div class="player-hud-meta">
+              <span class="hud-eyebrow">ACTIVE CONTESTANT</span>
               <h2 id="activePlayerName">Ready Player</h2>
-              <div class="player-sub-meta">
-                <span id="activePlayerId" class="id-badge">231-15-0000</span>
-                <span id="activePlayerDept">Contestant</span>
+              <div class="player-hud-tags">
+                <span id="activePlayerId" class="hud-id-tag">231-15-0000</span>
+                <span class="hud-dept-tag">EEE Fest Challenger</span>
               </div>
             </div>
           </div>
 
-          <div class="player-status-tag">
-            <div class="status-title">Arena Status</div>
-            <div id="activePlayerStatus" class="status-val">ON STAGE</div>
+          <div class="player-hud-status">
+            <div class="status-label">Stage Status</div>
+            <div id="activePlayerStatus" class="status-indicator-live">⚡ ON DECK</div>
           </div>
         </div>
 
-        <!-- Digital Game Arena Screen -->
-        <div class="game-arena-screen" id="gameArenaScreen">
-          <div id="arenaModeHeadline" class="arena-mode-headline">
-            ⚡ MODE 1: ONE TOUCH = GAME OVER
+        <!-- Open Game Stage (No Boxy Card Container) -->
+        <div class="fest-game-stage" id="gameArenaScreen">
+          
+          <div id="arenaModeHeadline" class="fest-stage-headline">
+            ⚡ MODE 1: ONE TOUCH = INSTANT KNOCKOUT
           </div>
 
-          <!-- Giant Digital Stopwatch -->
-          <div class="timer-container">
-            <div class="stopwatch-digits">
-              <span id="timerDigits">00:00.</span><span id="timerMillis" class="millis">000</span>
+          <!-- Digital Stopwatch -->
+          <div class="fest-stopwatch-wrap">
+            <div class="fest-stopwatch-digits">
+              <span id="timerDigits">00:00.</span><span id="timerMillis" class="timer-millis">000</span>
             </div>
-            <div class="timer-label">Survival Time (MM:SS.ms)</div>
+            <div class="fest-stopwatch-caption">ARENA SURVIVAL CLOCK</div>
           </div>
 
-          <!-- Touch Counter (Mode 2) -->
-          <div class="touch-counter-row">
-            <div id="touchStatBox" class="touch-stat-box" style="display: none;">
-              <div class="touch-stat-title">Wire Touches</div>
-              <div id="touchCounter" class="touch-stat-value">0</div>
+          <!-- Mode 2 Touch Metric -->
+          <div class="fest-metrics-row">
+            <div id="touchStatBox" class="fest-metric-bubble" style="display: none;">
+              <span class="metric-label">WIRE TOUCHES</span>
+              <span id="touchCounter" class="metric-value">0</span>
             </div>
           </div>
 
-          <!-- Spacebar Start Call To Action -->
-          <div class="start-cta-banner" id="startCtaBanner">
-            <span class="key-badge">SPACEBAR</span>
-            <span class="cta-text">Press Spacebar to Begin Countdown</span>
+          <!-- Floating Start Interaction -->
+          <div class="fest-start-banner" id="startCtaBanner">
+            <span class="fest-key-chip">SPACEBAR</span>
+            <span class="start-hint-text">Press Spacebar to Begin Countdown</span>
           </div>
 
           <!-- ==================== ANIMATED SCREEN PLAY OVERLAYS ==================== -->
 
-          <!-- 1. Cinematic Countdown Screen Play (EEE Fest + PES + Technical Partner) -->
-          <div class="overlay-modal countdown-overlay" id="countdownOverlay">
-            
-            <!-- Partners Marquee Banner -->
-            <div class="countdown-partners-banner">
-              <div class="countdown-logo-item">
-                <img src="assets/eee-fest-logo.png" alt="EEE Fest Logo">
-                <span class="caption">Flagship Fest</span>
+          <!-- 1. Cinematic Countdown Screen Play (EEE Fest + PES DIU SBC Only) -->
+          <div class="fest-overlay countdown-overlay" id="countdownOverlay">
+            <div class="countdown-fest-marquee">
+              <div class="marquee-logo-unit">
+                <img src="assets/eee-fest-logo.png" alt="EEE Fest 2026">
+                <span>Flagship Fest</span>
               </div>
-              <div class="logo-divider" style="height:40px"></div>
-              <div class="countdown-logo-item">
+              <div class="marquee-divider"></div>
+              <div class="marquee-logo-unit">
                 <img src="assets/ieee-pes-diu-logo.png" alt="IEEE PES DIU SBC">
-                <span class="caption">Organized By</span>
-              </div>
-              <div class="logo-divider" style="height:40px"></div>
-              <div class="countdown-logo-item">
-                <img src="assets/technical-partner-logo.png" alt="Technical Partner" style="height:38px">
-                <span class="caption">Technical Partner</span>
+                <span>Organized by</span>
               </div>
             </div>
 
-            <div id="countdownNumber" class="countdown-number">3</div>
-            <div class="countdown-subtext">STEADY YOUR HANDS...</div>
+            <div id="countdownNumber" class="countdown-hero-digit">3</div>
+            <div class="countdown-glow-subtitle">STEADY YOUR HANDS & GRIP THE WAND</div>
           </div>
 
-          <!-- 2. Red-Themed Animated Game Over Overlay -->
-          <div class="overlay-modal gameover-overlay" id="gameoverOverlay">
-            <div class="gameover-glitch-title">GAME OVER</div>
-            <div id="goReason" class="gameover-reason">Touched the Wire Track!</div>
+          <!-- 2. Sudden Death Game Over Overlay -->
+          <div class="fest-overlay gameover-overlay" id="gameoverOverlay">
+            <div class="gameover-laser-badge">CRITICAL CONTACT</div>
+            <div class="gameover-title-glitch">GAME OVER</div>
+            <div id="goReason" class="gameover-flavor">Touched the Wire Track!</div>
             
-            <div class="gameover-stats-grid">
-              <div class="gameover-stat-card">
-                <div class="stat-label">Player</div>
-                <div id="goPlayerName" class="stat-number" style="font-size:1.6rem">Player</div>
+            <div class="gameover-stat-summary">
+              <div class="summary-stat-node">
+                <span class="node-label">Player</span>
+                <span id="goPlayerName" class="node-val node-highlight">Player</span>
               </div>
-              <div class="gameover-stat-card">
-                <div class="stat-label">Time Survived</div>
-                <div id="goTime" class="stat-number">0.00s</div>
+              <div class="summary-stat-node">
+                <span class="node-label">Survival Time</span>
+                <span id="goTime" class="node-val">0.00s</span>
               </div>
-              <div class="gameover-stat-card">
-                <div class="stat-label">Touches</div>
-                <div id="goTouches" class="stat-number">1</div>
+              <div class="summary-stat-node">
+                <span class="node-label">Touches</span>
+                <span id="goTouches" class="node-val">1</span>
               </div>
             </div>
           </div>
 
           <!-- 3. Victory Celebration Overlay -->
-          <div class="overlay-modal victory-overlay" id="victoryOverlay">
-            <div class="trophy-icon">🏆</div>
-            <div class="victory-title">WIRE CONQUERED!</div>
-            <div class="victory-subtitle" id="vicPlayerName">Champion Run</div>
+          <div class="fest-overlay victory-overlay" id="victoryOverlay">
+            <div class="trophy-crest">🏆</div>
+            <div class="victory-headline">WIRE CONQUERED!</div>
+            <div class="victory-hero-name" id="vicPlayerName">Champion Run</div>
 
-            <div class="victory-score-badge">
-              <div class="score-title">Final Score</div>
-              <div id="vicScore" class="score-huge">9,850</div>
+            <div class="victory-score-pill">
+              <span class="score-pill-title">OFFICIAL SCORE</span>
+              <span id="vicScore" class="score-pill-number">9,850</span>
             </div>
 
-            <div class="gameover-stats-grid">
-              <div class="gameover-stat-card">
-                <div class="stat-label">Total Time</div>
-                <div id="vicTime" class="stat-number">12.45s</div>
+            <div class="gameover-stat-summary">
+              <div class="summary-stat-node">
+                <span class="node-label">Completion Time</span>
+                <span id="vicTime" class="node-val">12.45s</span>
               </div>
-              <div class="gameover-stat-card">
-                <div class="stat-label">Total Touches</div>
-                <div id="vicTouches" class="stat-number">0</div>
+              <div class="summary-stat-node">
+                <span class="node-label">Total Touches</span>
+                <span id="vicTouches" class="node-val">0</span>
               </div>
             </div>
           </div>
 
-          <!-- 4. Intermission Leaderboard Overlay -->
-          <div class="overlay-modal leaderboard-overlay" id="leaderboardOverlay">
-            <h2>🏆 Leaderboard Standings</h2>
-            <p>EEE Fest 2026 Wire Buzz Hall of Fame</p>
+          <!-- 4. Intermission Leaderboard Screen Play -->
+          <div class="fest-overlay leaderboard-overlay" id="leaderboardOverlay">
+            <div class="podium-section-header">
+              <h2>🏆 HALL OF FAME LEADERBOARD</h2>
+              <p>EEE Fest 2026 Wire Buzz Championship</p>
+            </div>
 
-            <div class="top-podium-row">
-              <div class="podium-slot rank-2" id="podiumRank2">
-                <div class="podium-medal">🥈</div>
-                <div class="podium-name">Player 2</div>
-                <div class="podium-score">--</div>
+            <div class="fest-podium-shelf">
+              <div class="podium-pedestal rank-silver" id="podiumRank2">
+                <div class="medal-icon">🥈</div>
+                <div class="podium-contestant-name">Player 2</div>
+                <div class="podium-contestant-score">--</div>
               </div>
-              <div class="podium-slot rank-1" id="podiumRank1">
-                <div class="podium-medal">🥇</div>
-                <div class="podium-name">Player 1</div>
-                <div class="podium-score">--</div>
+              <div class="podium-pedestal rank-gold" id="podiumRank1">
+                <div class="medal-icon">🥇</div>
+                <div class="podium-contestant-name">Player 1</div>
+                <div class="podium-contestant-score">--</div>
               </div>
-              <div class="podium-slot rank-3" id="podiumRank3">
-                <div class="podium-medal">🥉</div>
-                <div class="podium-name">Player 3</div>
-                <div class="podium-score">--</div>
+              <div class="podium-pedestal rank-bronze" id="podiumRank3">
+                <div class="medal-icon">🥉</div>
+                <div class="podium-contestant-name">Player 3</div>
+                <div class="podium-contestant-score">--</div>
               </div>
             </div>
 
-            <div class="leaderboard-table-wrap">
-              <table class="leaderboard-mini-table">
+            <div class="fest-table-container">
+              <table class="fest-mini-table">
                 <thead>
                   <tr>
                     <th>Rank</th>
-                    <th>Name</th>
+                    <th>Contestant</th>
                     <th>Student ID</th>
                     <th>Time</th>
                     <th>Score</th>
@@ -206,8 +206,8 @@
               </table>
             </div>
 
-            <div class="next-player-countdown-bar" id="intermissionCountdown">
-              Next player takes the stage in 6s...
+            <div class="intermission-status-ticker" id="intermissionCountdown">
+              Next challenger steps onto the stage in 6s...
             </div>
           </div>
 
@@ -216,42 +216,55 @@
         </div>
       </section>
 
-      <!-- Right Column: QR Code & Queue List -->
-      <aside class="queue-stage">
+      <!-- Right Column: Minimalist Stage Rail (No Boxed Cards) -->
+      <aside class="fest-stage-rail">
         
-        <!-- QR Code Registration Card -->
-        <div class="qr-join-card">
-          <h3>📱 Join the Queue</h3>
-          <p>Scan to follow IEEE PES DIU SBC & enter the arena</p>
+        <!-- Minimalist Floating QR Portal -->
+        <div class="fest-qr-portal">
+          <div class="qr-portal-heading">
+            <h3>📱 JOIN THE QUEUE</h3>
+            <p>Scan to follow IEEE PES DIU SBC & compete</p>
+          </div>
           
-          <div class="qr-frame">
-            <div id="qrCodeImage"></div>
+          <div class="fest-qr-viewfinder">
+            <div class="corner-bracket tl"></div>
+            <div class="corner-bracket tr"></div>
+            <div class="corner-bracket bl"></div>
+            <div class="corner-bracket br"></div>
+            <div id="qrCodeImage" class="qr-code-actual"></div>
           </div>
 
-          <a id="qrLinkDirect" href="register.html" target="_blank" class="qr-footer-link">
-            Open Registration Page ↗
+          <a id="qrLinkDirect" href="register.html" target="_blank" class="fest-qr-link">
+            Open Registration Link ↗
           </a>
         </div>
 
-        <!-- Upcoming Player Queue Card -->
-        <div class="queue-list-card">
-          <div class="queue-card-header">
-            <h3>Upcoming Queue</h3>
-            <span id="queueCount" class="queue-count-badge">0 in queue</span>
+        <div class="fest-rail-divider"></div>
+
+        <!-- Live Queue Roster Stream (Borderless) -->
+        <div class="fest-queue-stream">
+          <div class="queue-stream-header">
+            <h3>CHALLENGER QUEUE</h3>
+            <span id="queueCount" class="queue-stream-badge">0 IN QUEUE</span>
           </div>
 
-          <div class="queue-items-container" id="queueList"></div>
+          <div class="queue-roster-list" id="queueList"></div>
         </div>
 
       </aside>
 
     </main>
+
+    <!-- Floating Hardware Test Notification Toast -->
+    <div id="hardwareToast" class="fest-hardware-toast"></div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Local & Offline Scripts (Zero External Dependencies) -->
+  <script src="js/mqtt.min.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/serial.js"></script>
   <script src="js/state.js"></script>
+  <script src="js/sync.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

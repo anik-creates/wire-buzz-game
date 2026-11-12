@@ -56,13 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateModeUI(mode) {
     if (mode === 1) {
-      btnMode1.className = "mode-card-btn active-mode-1";
-      btnMode2.className = "mode-card-btn";
+      btnMode1.className = "admin-mode-select-box active-mode-1";
+      btnMode2.className = "admin-mode-select-box";
       activeModeLabel.textContent = "Mode 1: Sudden Death Active";
       activeModeLabel.style.color = "#ff1744";
     } else {
-      btnMode1.className = "mode-card-btn";
-      btnMode2.className = "mode-card-btn active-mode-2";
+      btnMode1.className = "admin-mode-select-box";
+      btnMode2.className = "admin-mode-select-box active-mode-2";
       activeModeLabel.textContent = "Mode 2: Touch Master Active";
       activeModeLabel.style.color = "var(--fest-gold)";
     }
