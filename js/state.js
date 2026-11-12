@@ -1,27 +1,31 @@
 /**
  * ============================================================================
  * EEE Fest 2026 - Central State & Sync Controller
+ * Organized by IEEE PES DIU SBC
  * ============================================================================
  */
 
 class GameStateManager {
   constructor() {
-    this.storageKey = 'eee_fest_wire_buzz_v3';
-    this.channel = new BroadcastChannel('wire_buzz_channel');
+    this.storageKey = 'eee_fest_wire_buzz_v5';
+    this.channel = null;
+    
+    try {
+      this.channel = new BroadcastChannel('wire_buzz_channel');
+      this.channel.onmessage = (event) => {
+        if (event.data && event.data.type) {
+          this.handleBroadcastMessage(event.data);
+        }
+      };
+    } catch (e) {
+      console.warn("BroadcastChannel unavailable:", e);
+    }
     
     this.state = {
       mode: 1, // 1: Sudden Death, 2: Multi-Touch Precision
       status: 'IDLE', // IDLE, COUNTDOWN, PLAYING, GAMEOVER, FINISHED, INTERMISSION
-      activePlayer: {
-        name: "Contestant 1",
-        studentId: "231-15-0001",
-        department: "EEE Fest"
-      },
-      queue: [
-        { id: "q1", name: "Tanvir Ahmed", studentId: "223-15-9871", department: "EEE" },
-        { id: "q2", name: "Nusrat Jahan", studentId: "231-15-4120", department: "EEE" },
-        { id: "q3", name: "Shahriar Kabir", studentId: "232-15-7741", department: "EEE" }
-      ],
+      activePlayer: null, // Starts empty (no dummy players)
+      queue: [],          // Starts empty (no mock data)
       currentMatch: {
         startTime: 0,
         endTime: 0,
@@ -35,13 +39,7 @@ class GameStateManager {
 
     this.listeners = [];
     this.loadFromStorage();
-
-    // BroadcastChannel sync
-    this.channel.onmessage = (event) => {
-      if (event.data && event.data.type) {
-        this.handleBroadcastMessage(event.data);
-      }
-    };
+    this.ensureStageReady();
   }
 
   on(event, callback) {
@@ -54,15 +52,53 @@ class GameStateManager {
       .forEach(l => l.callback(data, event));
   }
 
+  isDefaultPlaceholder(p) {
+    if (!p || !p.name) return true;
+    const n = p.name.trim().toLowerCase();
+    const id = (p.studentId || '').trim().toLowerCase();
+    return n === 'ready player' || 
+           n === 'contestant 1' || 
+           n === 'waiting for player' || 
+           n === 'player' || 
+           n === 'champion' ||
+           n === 'none' ||
+           id === '231-15-0000' ||
+           id === '231-15-0001' ||
+           id === 'scan qr to join' ||
+           id === '';
+  }
+
+  // Ensures top of queue automatically sits on the playground if stage is idle/vacant
+  ensureStageReady() {
+    if (this.isDefaultPlaceholder(this.state.activePlayer) && this.state.queue.length > 0) {
+      this.state.activePlayer = this.state.queue.shift();
+      this.saveToStorage();
+      this.emit('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
+      this.emit('QUEUE_UPDATED', { queue: this.state.queue });
+      this.emit('state_changed', this.state);
+    }
+  }
+
   loadFromStorage() {
     try {
       const saved = localStorage.getItem(this.storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.queue && parsed.queue.length > 0) this.state.queue = parsed.queue;
-        if (parsed.matchHistory) this.state.matchHistory = parsed.matchHistory;
-        if (parsed.mode) this.state.mode = parsed.mode;
-        if (parsed.activePlayer) this.state.activePlayer = parsed.activePlayer;
+        if (Array.isArray(parsed.queue)) {
+          // Filter out any stale mock dummy players
+          this.state.queue = parsed.queue.filter(p => !this.isDefaultPlaceholder(p));
+        }
+        if (Array.isArray(parsed.matchHistory)) {
+          this.state.matchHistory = parsed.matchHistory;
+        }
+        if (parsed.mode === 1 || parsed.mode === 2) {
+          this.state.mode = parsed.mode;
+        }
+        if (parsed.activePlayer && !this.isDefaultPlaceholder(parsed.activePlayer)) {
+          this.state.activePlayer = parsed.activePlayer;
+        } else {
+          this.state.activePlayer = null;
+        }
       }
     } catch (e) {
       console.warn("Storage load error:", e);
@@ -84,7 +120,9 @@ class GameStateManager {
 
   broadcast(type, payload = {}) {
     this.saveToStorage();
-    this.channel.postMessage({ type, payload, timestamp: Date.now() });
+    if (this.channel) {
+      this.channel.postMessage({ type, payload, timestamp: Date.now() });
+    }
     this.emit(type, payload);
     this.emit('state_changed', this.state);
   }
@@ -95,6 +133,7 @@ class GameStateManager {
     switch (type) {
       case 'QUEUE_UPDATED':
         if (payload.queue) this.state.queue = payload.queue;
+        this.ensureStageReady();
         break;
       case 'MODE_CHANGED':
         this.state.mode = payload.mode;
@@ -134,38 +173,86 @@ class GameStateManager {
     const player = {
       id: "p_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
       name: (playerData.name || "Contestant").trim(),
-      studentId: (playerData.studentId || "231-00-0000").trim(),
+      studentId: (playerData.studentId || "").trim(),
       department: playerData.department || "EEE",
       registeredAt: new Date().toLocaleTimeString()
     };
 
-    // Prevent duplicate entries
-    const exists = this.state.queue.some(p => p.studentId === player.studentId);
-    if (exists) {
-      return this.state.queue.find(p => p.studentId === player.studentId);
+    // Check if player is already the active player
+    if (this.state.activePlayer && this.state.activePlayer.studentId === player.studentId) {
+      return this.state.activePlayer;
     }
 
-    if (!this.state.activePlayer || !this.state.activePlayer.name || this.state.activePlayer.name === "Ready Player") {
+    // Check if player is already in queue
+    const existing = this.state.queue.find(p => p.studentId === player.studentId);
+    if (existing) {
+      return existing;
+    }
+
+    // If stage currently has no real contestant, this player goes DIRECTLY onto the playground!
+    if (this.isDefaultPlaceholder(this.state.activePlayer)) {
       this.state.activePlayer = player;
       this.broadcast('ACTIVE_PLAYER_CHANGED', { player });
     } else {
+      // Contestant currently on stage, so add this player to upcoming queue
       this.state.queue.push(player);
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
     }
 
-    // Publish to cloud MQTT if requested
+    // Broadcast across cloud
     if (publishToCloud && window.cloudSync) {
       window.cloudSync.publishRegistration(player);
+      window.cloudSync.broadcastCurrentState();
     }
 
     return player;
+  }
+
+  // Promote any player from queue directly onto the playground
+  promoteToStage(queueIndex) {
+    if (queueIndex >= 0 && queueIndex < this.state.queue.length) {
+      const player = this.state.queue.splice(queueIndex, 1)[0];
+      
+      // If previous contestant wasn't a placeholder, put them back at front of queue
+      if (this.state.activePlayer && !this.isDefaultPlaceholder(this.state.activePlayer)) {
+        this.state.queue.unshift(this.state.activePlayer);
+      }
+
+      this.state.activePlayer = player;
+      this.broadcast('ACTIVE_PLAYER_CHANGED', { player });
+      this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
+      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+      return player;
+    }
+    return null;
+  }
+
+  advanceToNextPlayer() {
+    if (this.state.queue.length > 0) {
+      const next = this.state.queue.shift();
+      this.state.activePlayer = next;
+      this.broadcast('ACTIVE_PLAYER_CHANGED', { player: next });
+      this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
+      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+      return next;
+    } else {
+      this.state.activePlayer = {
+        name: "Waiting for Player",
+        studentId: "Scan QR to Join",
+        department: "EEE Fest"
+      };
+      this.broadcast('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
+      this.broadcast('QUEUE_UPDATED', { queue: [] });
+      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
+      return null;
+    }
   }
 
   removePlayerFromQueue(index) {
     if (index >= 0 && index < this.state.queue.length) {
       const removed = this.state.queue.splice(index, 1)[0];
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-      if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
+      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
       return removed;
     }
     return null;
@@ -177,33 +264,14 @@ class GameStateManager {
       const item = this.state.queue.splice(fromIndex, 1)[0];
       this.state.queue.splice(toIndex, 0, item);
       this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-      if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
-    }
-  }
-
-  advanceToNextPlayer() {
-    if (this.state.queue.length > 0) {
-      const next = this.state.queue.shift();
-      this.state.activePlayer = next;
-      this.broadcast('ACTIVE_PLAYER_CHANGED', { player: next });
-      this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-      if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
-      return next;
-    } else {
-      this.state.activePlayer = {
-        name: "Waiting for Player",
-        studentId: "Scan QR to Join",
-        department: "EEE Fest"
-      };
-      this.broadcast('ACTIVE_PLAYER_CHANGED', { player: this.state.activePlayer });
-      return null;
+      if (window.cloudSync) window.cloudSync.broadcastCurrentState();
     }
   }
 
   clearQueue() {
     this.state.queue = [];
     this.broadcast('QUEUE_UPDATED', { queue: this.state.queue });
-    if (window.cloudSync) window.cloudSync.broadcastQueue(this.state.queue);
+    if (window.cloudSync) window.cloudSync.broadcastCurrentState();
   }
 
   setMode(modeNumber) {
@@ -248,57 +316,18 @@ class GameStateManager {
     let list = this.state.matchHistory.filter(m => m.mode === targetMode);
 
     if (targetMode === 1) {
-      list.sort((a, b) => b.elapsedMs - a.elapsedMs);
-    } else {
-      list.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        if (a.touches !== b.touches) return a.touches - b.touches;
-        return a.elapsedMs - b.elapsedMs;
+      // In Sudden Death: Finished runs first, then sorted by longest survival time
+      return list.sort((a, b) => {
+        if (a.status === 'FINISHED' && b.status !== 'FINISHED') return -1;
+        if (b.status === 'FINISHED' && a.status !== 'FINISHED') return 1;
+        return b.elapsedMs - a.elapsedMs;
       });
+    } else {
+      // Mode 2: Sorted by highest precision score
+      return list.sort((a, b) => b.score - a.score);
     }
-
-    return list.slice(0, 10);
-  }
-
-  exportToCsv() {
-    if (this.state.matchHistory.length === 0) {
-      alert("No match history to export yet.");
-      return;
-    }
-
-    const headers = ["Match ID", "Player Name", "Student ID", "Department", "Mode", "Status", "Elapsed (s)", "Touches", "Score", "Timestamp"];
-    const rows = this.state.matchHistory.map(m => [
-      m.id,
-      `"${m.playerName}"`,
-      `"${m.studentId}"`,
-      `"${m.department || ''}"`,
-      `Mode ${m.mode}`,
-      m.status,
-      (m.elapsedMs / 1000).toFixed(2),
-      m.touches,
-      m.score,
-      `"${m.timestamp}"`
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `EEE_Fest_Wire_Buzz_Reports_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  exportToJson() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.state.matchHistory, null, 2));
-    const link = document.createElement("a");
-    link.setAttribute("href", dataStr);
-    link.setAttribute("download", `EEE_Fest_Wire_Buzz_Data_${new Date().toISOString().slice(0,10)}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   }
 }
 
+// Global Central State Instance
 window.gameState = new GameStateManager();

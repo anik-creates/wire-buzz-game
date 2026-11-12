@@ -66,17 +66,34 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========================== RENDERING =====================================
 
   function renderActivePlayer() {
-    const p = state.state.activePlayer || { name: "Contestant 1", studentId: "231-15-0000" };
-    if (activePlayerName) activePlayerName.textContent = p.name;
-    if (activePlayerId) activePlayerId.textContent = p.studentId;
+    state.ensureStageReady();
+    const p = state.state.activePlayer;
+    const isPlaceholder = state.isDefaultPlaceholder(p);
+
+    const activePlayerAvatar = document.getElementById('activePlayerAvatar');
+
+    if (activePlayerAvatar) {
+      activePlayerAvatar.textContent = (!isPlaceholder && p && p.name) ? p.name.charAt(0).toUpperCase() : "?";
+    }
+
+    if (activePlayerName) {
+      activePlayerName.textContent = (!isPlaceholder && p && p.name) ? p.name : "WAITING FOR PLAYER";
+    }
+
+    if (activePlayerId) {
+      activePlayerId.textContent = (!isPlaceholder && p && p.studentId) ? p.studentId : "SCAN QR TO ENTER";
+    }
 
     if (activePlayerStatus) {
       if (state.state.status === 'PLAYING') {
-        activePlayerStatus.textContent = "IN ARENA";
+        activePlayerStatus.textContent = "⚡ IN ARENA";
         activePlayerStatus.style.color = "var(--fest-cyan)";
-      } else {
-        activePlayerStatus.textContent = "ON DECK";
+      } else if (!isPlaceholder) {
+        activePlayerStatus.textContent = "⚡ ON STAGE (READY)";
         activePlayerStatus.style.color = "var(--fest-green)";
+      } else {
+        activePlayerStatus.textContent = "⚡ STAGE OPEN";
+        activePlayerStatus.style.color = "var(--fest-gold)";
       }
     }
   }
@@ -101,8 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderQueue() {
+    state.ensureStageReady();
     const q = state.state.queue;
-    if (queueCount) queueCount.textContent = `${q.length} in queue`;
+    if (queueCount) queueCount.textContent = `${q.length} IN QUEUE`;
 
     if (!queueList) return;
 
@@ -112,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     queueList.innerHTML = q.map((p, idx) => `
-      <div class="queue-item">
+      <div class="queue-item" onclick="window.promoteQueueIndex(${idx})" title="Click to call ${escapeHtml(p.name)} directly to the playground stage" style="cursor:pointer">
         <div class="queue-item-left">
           <div class="queue-index-bubble">#${idx + 1}</div>
           <div class="queue-player-details">
@@ -120,9 +138,20 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="q-id">${escapeHtml(p.studentId)}</div>
           </div>
         </div>
+        <div style="font-size:0.7rem;color:var(--fest-gold);font-weight:800;letter-spacing:0.05em">★ CALL UP</div>
       </div>
     `).join('');
   }
+
+  window.promoteQueueIndex = (idx) => {
+    const promoted = state.promoteToStage(idx);
+    if (promoted) {
+      sound.announceNextPlayer(promoted.name, promoted.studentId);
+      showToast("⚡ Called " + promoted.name + " to the stage!");
+      renderActivePlayer();
+      renderQueue();
+    }
+  };
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -163,6 +192,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function startCountdownSequence() {
     if (state.state.status === 'PLAYING' || state.state.status === 'COUNTDOWN') return;
+
+    // Ensure stage has an active player
+    state.ensureStageReady();
+
+    if (state.isDefaultPlaceholder(state.state.activePlayer)) {
+      if (state.state.queue.length > 0) {
+        state.state.activePlayer = state.state.queue.shift();
+        state.broadcast('ACTIVE_PLAYER_CHANGED', { player: state.state.activePlayer });
+        state.broadcast('QUEUE_UPDATED', { queue: state.state.queue });
+        renderActivePlayer();
+        renderQueue();
+      } else {
+        showToast("⚠ No contestant in queue! Please scan QR code to enter.");
+        return;
+      }
+    }
 
     hideAllOverlays();
     state.state.status = 'COUNTDOWN';
@@ -235,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     state.state.status = 'GAMEOVER';
 
-    const p = state.state.activePlayer;
+    const p = state.state.activePlayer || { name: "Contestant", studentId: "231" };
     const finalElapsed = elapsedMs;
     const finalTouches = state.state.currentMatch.touches;
 
@@ -263,8 +308,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 4500);
   }
 
-  // Finish Line Trigger (Now works in PLAYING and provides instant feedback in IDLE)
-  function triggerVictory() {
+  // Finish Line Trigger (From Hardware or Web Simulation)
+  function triggerVictory(fromHardware = false) {
+    if (state.state.status === 'FINISHED' || state.state.status === 'GAMEOVER') return;
     const isPlaying = (state.state.status === 'PLAYING');
     
     stopwatchRunning = false;
@@ -280,7 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
       touches: finalTouches
     });
 
-    serial.sendCommand('FINISH');
+    if (!fromHardware) {
+      serial.sendCommand('FINISH');
+    }
 
     sound.playCelebrationClaps(5.0);
     sound.announceVictory(p.name, record.score, finalTouches, (finalElapsed / 1000).toFixed(1));
@@ -474,12 +522,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Finish Line Event Handler (From ESP32)
   serial.on('FINISH', () => {
-    triggerVictory();
+    triggerVictory(true);
   });
 
   serial.on('FINISH_TRIGGERED', () => {
     if (state.state.status === 'PLAYING') {
-      triggerVictory();
+      triggerVictory(true);
     } else {
       showToast("✓ Finish Pad Contact Tested (GPIO 6 OK)");
     }

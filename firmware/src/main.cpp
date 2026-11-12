@@ -332,26 +332,31 @@ void loop() {
     buzzerOff();
   }
 
-  // 3. Finish Line Detection on GPIO 6 (Active-Low with Internal Pull-up)
+  // 3. Finish Line Detection on GPIO 6 (Active-Low: Touched by GND Wand)
+  // Finish line ALWAYS takes absolute priority over wire touches!
   static uint32_t lastFinishTriggerTime = 0;
-  if (digitalRead(PIN_FINISH_PAD) == LOW) {
+  bool isFinishActive = (digitalRead(PIN_FINISH_PAD) == LOW);
+
+  if (isFinishActive) {
     if (now - lastFinishTriggerTime >= 200) {
       lastFinishTriggerTime = now;
       if (currentState == STATE_PLAYING) {
         triggerFinish();
       } else {
         // Immediate auditory & serial confirmation for sensor testing in IDLE
-        buzzerOn(2800, 120);
+        buzzerOn(2800, 160);
         sendJson("FINISH_TEST", "\"state\":\"FINISH_CONTACT_OK\",\"pin\":6");
       }
     }
+    // Finish line reached! NEVER trigger wire touch or Game Over when finish is contacted!
+    return;
   }
 
-  // 4. Wire Touch Detection on GPIO 4 (Active-Low with Internal Pull-up)
+  // 4. Wire Touch Detection on GPIO 4 (Active-Low: Touched by GND Wand)
   static uint32_t lastTrackTestTime = 0;
   if (digitalRead(PIN_WIRE_TOUCH) == LOW) {
     if (currentState == STATE_PLAYING) {
-      if (!isCurrentlyTouching && (now - lastTouchDebounce >= 25)) {
+      if (!isCurrentlyTouching && (now - lastTouchDebounce >= 20)) {
         isCurrentlyTouching = true;
         lastTouchDebounce = now;
         totalTouchCount++;
@@ -375,7 +380,7 @@ void loop() {
       }
     }
   } else {
-    if (isCurrentlyTouching && (now - lastTouchDebounce >= 20)) {
+    if (isCurrentlyTouching && (now - lastTouchDebounce >= 15)) {
       isCurrentlyTouching = false;
     }
   }

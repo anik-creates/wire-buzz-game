@@ -136,6 +136,9 @@ class CloudQueueSync {
         if (data.activePlayer) window.gameState.state.activePlayer = data.activePlayer;
         window.gameState.saveToStorage();
         window.gameState.emit('QUEUE_UPDATED', { queue: data.queue });
+        if (data.activePlayer) {
+          window.gameState.emit('ACTIVE_PLAYER_CHANGED', { player: data.activePlayer });
+        }
         window.gameState.emit('state_changed', window.gameState.state);
       }
     } else if (data.type === 'REQUEST_QUEUE_STATUS') {

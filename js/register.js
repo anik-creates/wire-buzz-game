@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let queueNum = "#1";
     if (state && state.state) {
       if (state.state.activePlayer && state.state.activePlayer.studentId === studentId) {
-        queueNum = "CURRENT (ON STAGE!)";
+        queueNum = "ON STAGE!";
       } else if (state.state.queue) {
         const idx = state.state.queue.findIndex(p => p.studentId === studentId);
         queueNum = (idx >= 0) ? `#${idx + 1}` : `#${state.state.queue.length || 1}`;
@@ -115,7 +115,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function showTicket(name, id, qNum) {
     if (ticketPlayerName) ticketPlayerName.textContent = name;
     if (ticketStudentId) ticketStudentId.textContent = id;
-    if (ticketNumber) ticketNumber.textContent = qNum;
+    if (ticketNumber) {
+      ticketNumber.textContent = qNum;
+      ticketNumber.style.color = (qNum === "ON STAGE!") ? "var(--fest-green)" : "var(--fest-gold)";
+    }
+
+    if (qNum === "ON STAGE!") {
+      const instr = document.querySelector('.ticket-instructions');
+      if (instr) {
+        instr.innerHTML = "⚡ <strong>YOU ARE CALLED TO THE STAGE!</strong><br>Grip the wand and prepare to play when countdown begins!";
+      }
+    }
 
     if (regFormSection) regFormSection.style.display = 'none';
     if (ticketSection) ticketSection.style.display = 'block';
@@ -131,19 +141,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Live Queue update callback: update ticket if queue moves
+  // Live Queue update callback: update ticket if queue moves or player takes the stage
   if (state) {
-    state.on('QUEUE_UPDATED', (payload) => {
+    const updateMyTicketPosition = (queue, activeP) => {
       const saved = localStorage.getItem('my_active_wire_buzz_ticket');
-      if (saved && payload.queue) {
-        try {
-          const t = JSON.parse(saved);
-          const idx = payload.queue.findIndex(p => p.studentId === t.studentId);
+      if (!saved) return;
+      try {
+        const t = JSON.parse(saved);
+        if (activeP && activeP.studentId === t.studentId) {
+          if (ticketNumber) {
+            ticketNumber.textContent = "ON STAGE!";
+            ticketNumber.style.color = "var(--fest-green)";
+          }
+          const instr = document.querySelector('.ticket-instructions');
+          if (instr) {
+            instr.innerHTML = "⚡ <strong>YOU ARE CALLED TO THE STAGE!</strong><br>Grip the wand and prepare to play when countdown begins!";
+          }
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        } else if (queue) {
+          const idx = queue.findIndex(p => p.studentId === t.studentId);
           if (idx >= 0 && ticketNumber) {
             ticketNumber.textContent = `#${idx + 1}`;
+            ticketNumber.style.color = "var(--fest-gold)";
           }
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
+    };
+
+    state.on('QUEUE_UPDATED', (payload) => {
+      updateMyTicketPosition(payload.queue, state.state.activePlayer);
+    });
+
+    state.on('ACTIVE_PLAYER_CHANGED', (payload) => {
+      updateMyTicketPosition(state.state.queue, payload.player);
     });
   }
 });

@@ -83,17 +83,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========================== MATCH CONTROLS ================================
 
   function renderActivePlayer() {
+    state.ensureStageReady();
     const p = state.state.activePlayer;
-    if (p && p.name) {
-      adminActivePlayer.innerHTML = `<strong>${escapeHtml(p.name)}</strong> (${escapeHtml(p.studentId)})`;
+    if (p && p.name && !state.isDefaultPlaceholder(p)) {
+      adminActivePlayer.innerHTML = `<span style="color:var(--fest-gold);font-weight:900">⚡ ON STAGE:</span> <strong>${escapeHtml(p.name)}</strong> (${escapeHtml(p.studentId)})`;
     } else {
-      adminActivePlayer.textContent = "No player selected";
+      adminActivePlayer.innerHTML = `<span style="color:var(--text-muted)">Stage Open (Waiting for contestant)</span>`;
     }
   }
 
   adminStartBtn.addEventListener('click', () => {
+    state.ensureStageReady();
     const p = state.state.activePlayer;
-    if (!p || !p.name) {
+    if (!p || !p.name || state.isDefaultPlaceholder(p)) {
       alert("No active player in the arena! Please add or advance a player from the queue.");
       return;
     }
@@ -119,20 +121,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   adminNextPlayerBtn.addEventListener('click', () => {
     const next = state.advanceToNextPlayer();
-    if (next) {
+    if (next && !state.isDefaultPlaceholder(next)) {
       sound.announceNextPlayer(next.name, next.studentId);
     }
     renderActivePlayer();
+    renderAdminQueue();
   });
 
   // ========================== QUEUE CONTROLLER ==============================
 
   function renderAdminQueue() {
+    state.ensureStageReady();
     const q = state.state.queue;
     adminQueueCount.textContent = `${q.length} Players`;
 
     if (q.length === 0) {
-      adminQueueList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.85rem">Queue is currently empty.</div>`;
+      adminQueueList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem">Queue is currently empty.</div>`;
       return;
     }
 
@@ -143,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span style="font-size:0.75rem;color:var(--text-muted);margin-left:8px">(${escapeHtml(p.studentId)})</span>
         </div>
         <div class="admin-q-actions">
+          <button type="button" class="btn btn-primary btn-icon" onclick="promoteAdminQueueItem(${idx})" title="Call contestant directly to the stage">★ Stage</button>
           ${idx > 0 ? `<button type="button" class="btn btn-dark btn-icon" onclick="moveQueueItem(${idx}, ${idx - 1})" title="Move Up">▲</button>` : ''}
           ${idx < q.length - 1 ? `<button type="button" class="btn btn-dark btn-icon" onclick="moveQueueItem(${idx}, ${idx + 1})" title="Move Down">▼</button>` : ''}
           <button type="button" class="btn btn-danger btn-icon" onclick="deleteQueueItem(${idx})" title="Delete Player">✕</button>
@@ -150,6 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `).join('');
   }
+
+  window.promoteAdminQueueItem = (idx) => {
+    const promoted = state.promoteToStage(idx);
+    if (promoted) {
+      sound.announceNextPlayer(promoted.name, promoted.studentId);
+      renderActivePlayer();
+      renderAdminQueue();
+    }
+  };
 
   window.deleteQueueItem = (idx) => {
     if (confirm("Remove this player from the queue?")) {
@@ -179,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     manualName.value = '';
     manualId.value = '';
+    renderActivePlayer();
     renderAdminQueue();
   });
 

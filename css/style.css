@@ -575,14 +575,18 @@ body.fest-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 10px;
+  padding: 8px 12px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.015);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  transition: background 0.2s;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 .queue-item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(245, 166, 35, 0.08);
+  border-color: var(--border-gold-subtle);
+  transform: translateX(-2px);
 }
 
 .queue-item-left {
