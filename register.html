@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Registration • Wire Buzz | EEE Fest 2026</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="assets/eee-fest-logo.svg">
+  <style>
+    .mobile-reg-container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .reg-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 28px 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+    .reg-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--fest-cyan), var(--fest-gold), var(--fest-amber));
+    }
+    .reg-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .reg-header img {
+      height: 64px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.4));
+    }
+    .reg-header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .reg-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Step 1: Facebook Follow Card */
+    .step-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .step-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--fest-cyan);
+      margin-bottom: 8px;
+    }
+    .fb-follow-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      background: #1877f2;
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(24, 119, 242, 0.4);
+      transition: all 0.2s;
+    }
+    .fb-follow-btn:hover {
+      background: #166fe5;
+      transform: translateY(-2px);
+    }
+    .fb-confirm-checkbox {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .fb-confirm-checkbox input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--fest-cyan);
+      cursor: pointer;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--fest-cyan);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.25);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    select.form-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238b9bb4'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 20px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--fest-cyan) 0%, var(--fest-gold) 100%);
+      color: #000;
+      border: none;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 229, 255, 0.35);
+      transition: all 0.25s;
+      margin-top: 8px;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(0, 229, 255, 0.5);
+    }
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Success Ticket Screen */
+    .ticket-screen {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .ticket-badge {
+      display: inline-block;
+      width: 80px;
+      height: 80px;
+      line-height: 80px;
+      border-radius: 50%;
+      background: rgba(0, 229, 255, 0.15);
+      border: 2px solid var(--fest-cyan);
+      font-size: 2.2rem;
+      color: var(--fest-cyan);
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+      margin-bottom: 16px;
+    }
+    .ticket-number {
+      font-family: var(--font-mono);
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: var(--fest-gold);
+      margin: 10px 0;
+    }
+    .ticket-info {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-reg-container">
+    <div class="reg-card">
+      
+      <!-- Registration Form -->
+      <div id="regFormSection">
+        <div class="reg-header">
+          <img src="assets/eee-fest-logo.svg" alt="EEE Fest Logo">
+          <h1>Wire Buzz Arena</h1>
+          <p>IEEE PES DIU SBC • EEE Fest 2026</p>
+        </div>
+
+        <!-- Step 1: Facebook Follow -->
+        <div class="step-box">
+          <div class="step-badge">Step 1 • Required to Play</div>
+          <a href="https://www.facebook.com/ieeepesdiusbc" target="_blank" id="fbFollowBtn" class="fb-follow-btn">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            Follow IEEE PES DIU SBC
+          </a>
+
+          <label class="fb-confirm-checkbox">
+            <input type="checkbox" id="fbCheck">
+            <span>I have followed the Facebook Page</span>
+          </label>
+        </div>
+
+        <!-- Step 2: Player Information -->
+        <div class="step-box">
+          <div class="step-badge">Step 2 • Player Details</div>
+          
+          <div class="form-group">
+            <label for="playerName">Full Name</label>
+            <input type="text" id="playerName" class="form-input" placeholder="e.g. Tanvir Ahmed" required>
+          </div>
+
+          <div class="form-group">
+            <label for="studentId">Student ID</label>
+            <input type="text" id="studentId" class="form-input" placeholder="e.g. 231-15-1234" required>
+          </div>
+
+          <div class="form-group">
+            <label for="department">Department</label>
+            <select id="department" class="form-input">
+              <option value="EEE" selected>EEE (Electrical & Electronic Eng.)</option>
+              <option value="CSE">CSE (Computer Science & Eng.)</option>
+              <option value="TE">Textile Engineering</option>
+              <option value="CE">Civil Engineering</option>
+              <option value="BBA">Business Administration</option>
+              <option value="Other">Other Department / Guest</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="button" id="confirmBtn" class="submit-btn">
+          Confirm & Enter Queue
+        </button>
+      </div>
+
+      <!-- Success Ticket Section -->
+      <div id="ticketSection" class="ticket-screen">
+        <div class="ticket-badge">✓</div>
+        <h2 style="color: #fff; font-size: 1.8rem; font-weight: 800;">YOU'RE IN THE QUEUE!</h2>
+        
+        <div class="ticket-number" id="ticketNumber">#4</div>
+        
+        <div class="ticket-info">
+          Welcome, <strong id="ticketPlayerName" style="color:#fff">Player</strong>!<br>
+          Your registration has been confirmed.<br>
+          <span style="color:var(--fest-cyan)">Please watch the projector display in the Wire Buzz Arena. You will be called to take the wand soon!</span>
+        </div>
+
+        <button type="button" id="registerAnotherBtn" class="submit-btn" style="background: rgba(255,255,255,0.1); color:#fff">
+          Register Another Player
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/register.js"></script>
+</body>
+</html>
