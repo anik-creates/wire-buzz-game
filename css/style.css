@@ -827,6 +827,7 @@ body.fest-body {
 /* 1. Countdown Overlay */
 .countdown-overlay {
   background: rgba(3, 4, 7, 0.94);
+  padding-bottom: 110px;
 }
 
 .countdown-fest-marquee {
@@ -886,47 +887,31 @@ body.fest-body {
   margin-top: 10px;
 }
 
-.countdown-partner-wrap {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: rgba(245, 166, 35, 0.06);
-  border: 1px solid rgba(245, 166, 35, 0.3);
-  border-radius: 14px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 35px rgba(245, 166, 35, 0.18), inset 0 0 20px rgba(245, 166, 35, 0.05);
-  animation: partnerGlow 2.4s infinite ease-in-out alternate;
-}
-
-@keyframes partnerGlow {
-  0% { transform: translateY(0); box-shadow: 0 0 24px rgba(245, 166, 35, 0.15); }
-  100% { transform: translateY(-4px); box-shadow: 0 0 45px rgba(245, 166, 35, 0.4); }
-}
-
-.countdown-partner-tag {
-  font-size: 0.74rem;
-  font-weight: 900;
-  letter-spacing: 0.22em;
-  color: var(--fest-gold);
-  text-transform: uppercase;
-  text-shadow: 0 0 12px rgba(245, 166, 35, 0.4);
-}
-
-.countdown-partner-logo {
-  height: 68px;
-  max-width: 300px;
+/* Big Footer Logo on Countdown Screen (No Container, Fixed directly to Footer) */
+.countdown-fixed-footer-logo {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 95px;
+  max-width: min(420px, 85vw);
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 0 18px rgba(245, 166, 35, 0.55));
-  transition: transform 0.25s ease, filter 0.25s ease;
+  filter: drop-shadow(0 0 24px rgba(245, 166, 35, 0.5));
+  pointer-events: none;
+  z-index: 20;
+  animation: countdownLogoBreath 3s infinite ease-in-out alternate;
 }
 
-.countdown-partner-logo:hover {
-  transform: scale(1.04);
-  filter: drop-shadow(0 0 26px rgba(245, 166, 35, 0.8));
+@keyframes countdownLogoBreath {
+  0% {
+    transform: translateX(-50%) scale(0.98);
+    filter: drop-shadow(0 0 16px rgba(245, 166, 35, 0.4));
+  }
+  100% {
+    transform: translateX(-50%) scale(1.02);
+    filter: drop-shadow(0 0 32px rgba(245, 166, 35, 0.8));
+  }
 }
 
 /* 2. Sudden Death Game Over Overlay */
@@ -2193,45 +2178,29 @@ body.fest-body {
 }
 
 /* ==========================================================================
-   LEFT RAIL FOOTER LOGO LOCKED AT THE BOTTOM
+   LEFT RAIL FOOTER LOCKED AT THE BOTTOM
    ========================================================================== */
 
 .left-rail-footer-logo-wrap {
   margin-top: auto;
-  padding: 10px 8px 8px 8px;
+  padding: 12px 10px;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 5px;
   border-top: 1px solid var(--border-subtle);
-  background: rgba(10, 10, 14, 0.65);
+  background: rgba(10, 10, 14, 0.7);
   border-radius: 8px;
   text-align: center;
 }
 
 .left-rail-partner-tag {
-  font-size: 0.62rem;
-  font-weight: 900;
+  font-size: 0.72rem;
+  font-weight: 800;
   letter-spacing: 0.12em;
-  color: var(--fest-gold);
+  color: #ffffff;
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(245, 166, 35, 0.35);
-  line-height: 1.3;
-}
-
-.left-rail-footer-logo-img {
-  max-width: 100%;
-  max-height: 54px;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(245, 166, 35, 0.25));
-  transition: transform 0.25s ease, filter 0.25s ease;
-}
-
-.left-rail-footer-logo-img:hover {
-  transform: scale(1.04);
-  filter: drop-shadow(0 0 18px rgba(245, 166, 35, 0.5));
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.25);
+  line-height: 1.4;
 }
 
 /* ==========================================================================
@@ -2622,4 +2591,11 @@ body.fest-body {
 @keyframes naturalPonytail {
   0% { transform: rotate(-3deg); }
   100% { transform: rotate(7deg); }
+}
+
+@media (max-width: 768px) {
+  .countdown-fixed-footer-logo {
+    height: 60px;
+    bottom: 14px;
+  }
 }
