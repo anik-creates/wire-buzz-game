@@ -333,18 +333,35 @@ class GameStateManager {
   }
 
   getLeaderboard(mode = null) {
-    const targetMode = mode || this.state.mode;
-    let list = this.state.matchHistory.filter(m => m.mode === targetMode);
+    let list = [...this.state.matchHistory];
 
-    if (targetMode === 1) {
+    if (mode === 1) {
+      list = list.filter(m => m.mode === 1);
       return list.sort((a, b) => {
         if (a.status === 'FINISHED' && b.status !== 'FINISHED') return -1;
         if (b.status === 'FINISHED' && a.status !== 'FINISHED') return 1;
+        if (a.status === 'FINISHED' && b.status === 'FINISHED') return a.elapsedMs - b.elapsedMs;
         return b.elapsedMs - a.elapsedMs;
       });
+    } else if (mode === 2) {
+      list = list.filter(m => m.mode === 2);
+      return list.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.elapsedMs - b.elapsedMs;
+      });
     } else {
-      return list.sort((a, b) => b.score - a.score);
+      // All modes combined
+      return list.sort((a, b) => {
+        if (a.status === 'FINISHED' && b.status !== 'FINISHED') return -1;
+        if (b.status === 'FINISHED' && a.status !== 'FINISHED') return 1;
+        if (b.score !== a.score) return b.score - a.score;
+        return a.elapsedMs - b.elapsedMs;
+      });
     }
+  }
+
+  getTopScorers(count = 10, mode = null) {
+    return this.getLeaderboard(mode).slice(0, count);
   }
 }
 

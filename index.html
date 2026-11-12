@@ -42,6 +42,10 @@
           <span id="comStatusText">Connect COM</span>
         </div>
 
+        <button type="button" id="topScorersNavBtn" class="fest-nav-action-btn" title="View Top 10 Hall of Fame Scorers (Shortcut: L)">
+          🏆 Top 10 Scorers
+        </button>
+
         <div id="liveClock" class="fest-clock">00:00:00</div>
       </div>
     </header>
@@ -209,6 +213,83 @@
 
             <div class="intermission-status-ticker" id="intermissionCountdown">
               Next challenger steps onto the stage in 6s...
+            </div>
+          </div>
+
+          <!-- 5. Top 10 Hall of Fame Leaderboard Modal Screen -->
+          <div class="fest-overlay top-scorers-modal" id="topScorersModal" style="display: none;">
+            <div class="top-scorers-modal-card">
+              
+              <!-- Modal Top Bar -->
+              <div class="modal-top-bar">
+                <div class="modal-fest-branding">
+                  <div class="modal-logos-row">
+                    <img src="assets/eee-fest-logo.png" alt="EEE Fest 2026" class="modal-logo-img">
+                    <div class="fest-brand-divider"></div>
+                    <img src="assets/ieee-pes-diu-logo.png" alt="IEEE PES DIU SBC" class="modal-logo-img">
+                  </div>
+                  <div class="modal-title-text">
+                    <h2>🏆 TOP 10 HALL OF FAME SCORERS</h2>
+                    <p>EEE Fest 2026 Wire Buzz Arena Championship • Organized by IEEE PES DIU SBC</p>
+                  </div>
+                </div>
+                <button type="button" id="closeTopScorersBtn" class="modal-close-chip" title="Close Leaderboard (Esc)">
+                  ✕ Close [Esc]
+                </button>
+              </div>
+
+              <!-- Filter Tabs -->
+              <div class="top-scorers-filter-bar">
+                <button type="button" class="top-filter-tab active" id="tabTopAll">All Modes</button>
+                <button type="button" class="top-filter-tab" id="tabTopMode1">Mode 1: Sudden Death</button>
+                <button type="button" class="top-filter-tab" id="tabTopMode2">Mode 2: Touch Master</button>
+              </div>
+
+              <!-- Top 3 Podium (Silver, Gold, Bronze) -->
+              <div class="fest-podium-shelf top10-podium">
+                <div class="podium-pedestal rank-silver" id="topPodium2">
+                  <div class="medal-icon">🥈</div>
+                  <div class="podium-contestant-name" id="topPodium2Name">---</div>
+                  <div class="podium-contestant-score" id="topPodium2Score">--</div>
+                  <div class="podium-rank-tag">2ND PLACE</div>
+                </div>
+                <div class="podium-pedestal rank-gold" id="topPodium1">
+                  <div class="medal-icon">🥇</div>
+                  <div class="podium-contestant-name" id="topPodium1Name">---</div>
+                  <div class="podium-contestant-score" id="topPodium1Score">--</div>
+                  <div class="podium-rank-tag">ARENA CHAMPION</div>
+                </div>
+                <div class="podium-pedestal rank-bronze" id="topPodium3">
+                  <div class="medal-icon">🥉</div>
+                  <div class="podium-contestant-name" id="topPodium3Name">---</div>
+                  <div class="podium-contestant-score" id="topPodium3Score">--</div>
+                  <div class="podium-rank-tag">3RD PLACE</div>
+                </div>
+              </div>
+
+              <!-- Top 10 Complete Ranked Table -->
+              <div class="top10-table-wrap">
+                <table class="top10-table">
+                  <thead>
+                    <tr>
+                      <th style="width:65px">Rank</th>
+                      <th>Contestant</th>
+                      <th>Student ID</th>
+                      <th>Mode</th>
+                      <th>Outcome</th>
+                      <th>Time</th>
+                      <th>Touches</th>
+                      <th>Score</th>
+                    </tr>
+                  </thead>
+                  <tbody id="topScorersTableBody"></tbody>
+                </table>
+              </div>
+
+              <div class="modal-footer-hint">
+                <span>Keyboard Shortcut: Press <strong style="color:var(--fest-gold)">L</strong> or <strong style="color:var(--fest-cyan)">Esc</strong> to toggle this screen anytime</span>
+              </div>
+
             </div>
           </div>
 

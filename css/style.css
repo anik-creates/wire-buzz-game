@@ -1608,3 +1608,252 @@ body.fest-body {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-subtle);
 }
+
+/* ==========================================================================
+   TOP 10 HALL OF FAME LEADERBOARD MODAL & NAV BUTTON
+   ========================================================================== */
+
+.fest-nav-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px solid var(--fest-gold);
+  border-radius: 20px;
+  color: var(--fest-gold);
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 12px rgba(245, 166, 35, 0.2);
+}
+.fest-nav-action-btn:hover {
+  background: var(--fest-gold);
+  color: #030407;
+  box-shadow: 0 0 22px rgba(245, 166, 35, 0.5);
+  transform: translateY(-1px);
+}
+
+.top-scorers-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 4, 7, 0.96);
+  backdrop-filter: blur(14px);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeInModal 0.28s ease-out;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.top-scorers-modal-card {
+  width: 100%;
+  max-width: 960px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(13, 17, 23, 0.92);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  border-radius: 18px;
+  padding: 26px 30px;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.85), 0 0 30px rgba(245, 166, 35, 0.18);
+  overflow-y: auto;
+}
+
+.modal-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+}
+
+.modal-fest-branding {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.modal-logos-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-logo-img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(245, 166, 35, 0.35));
+}
+
+.modal-title-text h2 {
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: linear-gradient(135deg, #fff 40%, var(--fest-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.modal-title-text p {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.modal-close-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close-chip:hover {
+  background: rgba(255, 23, 68, 0.15);
+  border-color: #ff1744;
+  color: #ff5252;
+}
+
+.top-scorers-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.top-filter-tab {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.top-filter-tab:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.top-filter-tab.active {
+  background: rgba(245, 166, 35, 0.15);
+  border-color: var(--fest-gold);
+  color: var(--fest-gold);
+  box-shadow: 0 0 14px rgba(245, 166, 35, 0.25);
+}
+
+.top10-podium {
+  margin: 8px 0 18px 0;
+  gap: 16px;
+}
+
+.top10-podium .podium-pedestal {
+  min-width: 170px;
+  padding: 12px 18px;
+}
+
+.podium-rank-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.top10-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.25);
+  margin-bottom: 12px;
+}
+
+.top10-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.top10-table th, .top10-table td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.top10-table th {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.top10-table tbody tr:hover {
+  background: rgba(245, 166, 35, 0.04);
+}
+
+.top-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-weight: 900;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.top-rank-badge.rank-1 {
+  background: var(--fest-gold);
+  color: #030407;
+  box-shadow: 0 0 12px rgba(245, 166, 35, 0.6);
+}
+
+.top-rank-badge.rank-2 {
+  background: #c0c0c0;
+  color: #030407;
+  box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+.top-rank-badge.rank-3 {
+  background: #cd7f32;
+  color: #030407;
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+}
+
+.top-rank-badge.rank-other {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.modal-footer-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  padding-top: 4px;
+}

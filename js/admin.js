@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminFinishBtn = document.getElementById('adminFinishBtn');
   const adminResetBtn = document.getElementById('adminResetBtn');
   const adminNextPlayerBtn = document.getElementById('adminNextPlayerBtn');
+  const adminToggleTopScorersBtn = document.getElementById('adminToggleTopScorersBtn');
 
   // DOM Elements - Queue
   const adminQueueList = document.getElementById('adminQueueList');
@@ -124,6 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
     renderActivePlayer();
     renderAdminQueue();
   });
+
+  if (adminToggleTopScorersBtn) {
+    adminToggleTopScorersBtn.addEventListener('click', () => {
+      state.broadcast('TRIGGER_TOGGLE_TOP_SCORERS');
+    });
+  }
 
   // ========================== QUEUE CONTROLLER ==============================
 

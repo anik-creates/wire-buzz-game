@@ -30,6 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const victoryOverlay = document.getElementById('victoryOverlay');
   const leaderboardOverlay = document.getElementById('leaderboardOverlay');
 
+  // Top 10 Hall of Fame Modal Elements
+  const topScorersNavBtn = document.getElementById('topScorersNavBtn');
+  const topScorersModal = document.getElementById('topScorersModal');
+  const closeTopScorersBtn = document.getElementById('closeTopScorersBtn');
+  const tabTopAll = document.getElementById('tabTopAll');
+  const tabTopMode1 = document.getElementById('tabTopMode1');
+  const tabTopMode2 = document.getElementById('tabTopMode2');
+  const topScorersTableBody = document.getElementById('topScorersTableBody');
+  let topScorersCurrentMode = null; // null = all, 1 = mode 1, 2 = mode 2
+
   const comStatusPill = document.getElementById('comStatusPill');
   const comStatusText = document.getElementById('comStatusText');
   const comStatusDot = document.getElementById('comStatusDot');
@@ -428,7 +438,112 @@ document.addEventListener('DOMContentLoaded', () => {
     gameoverOverlay.style.display = 'none';
     victoryOverlay.style.display = 'none';
     leaderboardOverlay.style.display = 'none';
+    if (topScorersModal) topScorersModal.style.display = 'none';
     stopConfetti();
+  }
+
+  // ========================== TOP 10 HALL OF FAME ==========================
+
+  function showTopScorersModal(mode = null) {
+    if (mode !== undefined && mode !== null) {
+      topScorersCurrentMode = mode;
+    }
+    updateTopScorersTabs();
+    renderTopScorersModal();
+    if (topScorersModal) {
+      topScorersModal.style.display = 'flex';
+    }
+  }
+
+  function hideTopScorersModal() {
+    if (topScorersModal) {
+      topScorersModal.style.display = 'none';
+    }
+  }
+
+  function toggleTopScorersModal() {
+    if (topScorersModal && topScorersModal.style.display === 'flex') {
+      hideTopScorersModal();
+    } else {
+      showTopScorersModal();
+    }
+  }
+
+  function updateTopScorersTabs() {
+    [tabTopAll, tabTopMode1, tabTopMode2].forEach(tab => {
+      if (tab) tab.classList.remove('active');
+    });
+    if (topScorersCurrentMode === 1 && tabTopMode1) {
+      tabTopMode1.classList.add('active');
+    } else if (topScorersCurrentMode === 2 && tabTopMode2) {
+      tabTopMode2.classList.add('active');
+    } else if (tabTopAll) {
+      tabTopAll.classList.add('active');
+    }
+  }
+
+  function renderTopScorersModal() {
+    const list = state.getTopScorers(10, topScorersCurrentMode);
+
+    // Podium entries (Rank 1, Rank 2, Rank 3)
+    const p1 = list[0] || null;
+    const p2 = list[1] || null;
+    const p3 = list[2] || null;
+
+    const fillPodium = (nameElId, scoreElId, record) => {
+      const nameEl = document.getElementById(nameElId);
+      const scoreEl = document.getElementById(scoreElId);
+      if (nameEl) nameEl.textContent = record ? record.playerName : "---";
+      if (scoreEl) {
+        if (!record) {
+          scoreEl.textContent = "--";
+        } else if (record.mode === 1) {
+          scoreEl.textContent = (record.status === 'FINISHED') 
+            ? `${(record.elapsedMs / 1000).toFixed(2)}s 🏆`
+            : `${(record.elapsedMs / 1000).toFixed(2)}s (KO)`;
+        } else {
+          scoreEl.textContent = `${record.score} pts`;
+        }
+      }
+    };
+
+    fillPodium('topPodium1Name', 'topPodium1Score', p1);
+    fillPodium('topPodium2Name', 'topPodium2Score', p2);
+    fillPodium('topPodium3Name', 'topPodium3Score', p3);
+
+    // Table rows 1 through 10
+    if (!topScorersTableBody) return;
+
+    if (list.length === 0) {
+      topScorersTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted)">No match records recorded yet. Completed matches will appear in the Top 10 Hall of Fame!</td></tr>`;
+      return;
+    }
+
+    topScorersTableBody.innerHTML = list.map((m, idx) => {
+      const rank = idx + 1;
+      let badgeClass = "rank-other";
+      if (rank === 1) badgeClass = "rank-1";
+      else if (rank === 2) badgeClass = "rank-2";
+      else if (rank === 3) badgeClass = "rank-3";
+
+      const isWin = (m.status === 'FINISHED');
+      const outcomeBadge = isWin
+        ? `<span style="background:rgba(0,230,118,0.15);color:var(--fest-green);padding:2px 8px;border-radius:10px;font-weight:800;font-size:0.72rem">🏆 CONQUERED</span>`
+        : `<span style="background:rgba(255,23,68,0.15);color:#ff5252;padding:2px 8px;border-radius:10px;font-weight:800;font-size:0.72rem">⛔ KNOCKOUT</span>`;
+
+      return `
+        <tr>
+          <td><span class="top-rank-badge ${badgeClass}">${rank}</span></td>
+          <td><strong>${escapeHtml(m.playerName)}</strong></td>
+          <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--fest-cyan)">${escapeHtml(m.studentId)}</td>
+          <td><span style="font-size:0.75rem;font-weight:700">${m.mode === 1 ? 'Mode 1' : 'Mode 2'}</span></td>
+          <td>${outcomeBadge}</td>
+          <td style="font-family:var(--font-mono)">${(m.elapsedMs / 1000).toFixed(2)}s</td>
+          <td>${m.touches || 0}</td>
+          <td style="font-family:var(--font-mono);font-weight:900;color:var(--fest-gold);font-size:0.95rem">${m.score || 0}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function resetStage() {
@@ -510,11 +625,20 @@ document.addEventListener('DOMContentLoaded', () => {
   serial.on('connection_changed', (data) => {
     if (data.connected) {
       comStatusDot.className = "pulse-dot connected";
-      comStatusText.textContent = "ESP32 Connected";
+      comStatusText.textContent = "ESP32 COM Connected";
       showToast("✓ ESP32 Connected on COM Port");
     } else {
       comStatusDot.className = "pulse-dot";
       comStatusText.textContent = "Connect COM";
+      if (data.error && !data.isUserCancel) {
+        showToast("⚠ " + data.error);
+      }
+    }
+  });
+
+  serial.on('connection_state', (data) => {
+    if (data.state === 'CONNECTING') {
+      comStatusText.textContent = "Connecting...";
     }
   });
 
@@ -547,13 +671,54 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast("⚡ Wire Track Contact Tested (GPIO 4 OK)");
   });
 
-  comStatusPill.addEventListener('click', () => {
+  comStatusPill.addEventListener('click', async () => {
     if (!serial.isConnected) {
-      serial.connect();
+      comStatusText.textContent = "Connecting...";
+      const ok = await serial.connect(null, false);
+      if (!ok) {
+        comStatusText.textContent = "Connect COM";
+      }
     } else {
-      serial.disconnect();
+      if (confirm("Disconnect ESP32 serial COM port?")) {
+        await serial.disconnect();
+        showToast("Disconnected from ESP32");
+      }
     }
   });
+
+  // ========================== TOP 10 MODAL BINDINGS =========================
+
+  if (topScorersNavBtn) {
+    topScorersNavBtn.addEventListener('click', () => toggleTopScorersModal());
+  }
+
+  if (closeTopScorersBtn) {
+    closeTopScorersBtn.addEventListener('click', () => hideTopScorersModal());
+  }
+
+  if (tabTopAll) {
+    tabTopAll.addEventListener('click', () => {
+      topScorersCurrentMode = null;
+      updateTopScorersTabs();
+      renderTopScorersModal();
+    });
+  }
+
+  if (tabTopMode1) {
+    tabTopMode1.addEventListener('click', () => {
+      topScorersCurrentMode = 1;
+      updateTopScorersTabs();
+      renderTopScorersModal();
+    });
+  }
+
+  if (tabTopMode2) {
+    tabTopMode2.addEventListener('click', () => {
+      topScorersCurrentMode = 2;
+      updateTopScorersTabs();
+      renderTopScorersModal();
+    });
+  }
 
   // ========================== KEYBOARD & REMOTE TRIGGERS ====================
 
@@ -565,6 +730,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (state.state.status === 'IDLE') {
         startCountdownSequence();
       }
+    } else if (e.code === 'KeyL') {
+      e.preventDefault();
+      toggleTopScorersModal();
+    } else if (e.code === 'Escape') {
+      hideTopScorersModal();
     } else if (e.code === 'KeyT') {
       handleTouchDetected(state.state.currentMatch.touches + 1);
     } else if (e.code === 'KeyF') {
@@ -594,6 +764,24 @@ document.addEventListener('DOMContentLoaded', () => {
     resetStage();
   });
 
+  state.on('TRIGGER_TOGGLE_TOP_SCORERS', () => {
+    toggleTopScorersModal();
+  });
+
+  state.on('TRIGGER_SHOW_TOP_SCORERS', () => {
+    showTopScorersModal();
+  });
+
+  state.on('TRIGGER_HIDE_TOP_SCORERS', () => {
+    hideTopScorersModal();
+  });
+
+  state.on('MATCH_FINISHED', () => {
+    if (topScorersModal && topScorersModal.style.display === 'flex') {
+      renderTopScorersModal();
+    }
+  });
+
   const startCtaBanner = document.getElementById('startCtaBanner');
   if (startCtaBanner) {
     startCtaBanner.addEventListener('click', startCountdownSequence);
@@ -615,6 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
   formatTime(0);
 
   initQrCode();
+  serial.autoConnect();
 });
 
 function initQrCode() {
