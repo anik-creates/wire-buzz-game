@@ -498,7 +498,7 @@ body.fest-body {
 
 .fest-stage-headline {
   position: absolute;
-  top: 10px;
+  top: 14px;
   font-size: 0.8rem;
   letter-spacing: 0.22em;
   font-weight: 800;
@@ -508,6 +508,7 @@ body.fest-body {
   padding: 5px 18px;
   border-radius: 30px;
   border: 1px solid var(--border-cyan-subtle);
+  z-index: 10;
 }
 
 /* Digital Stopwatch */
@@ -515,7 +516,7 @@ body.fest-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 20px 0;
+  margin: 72px 0 18px 0;
 }
 
 .fest-stopwatch-digits {
