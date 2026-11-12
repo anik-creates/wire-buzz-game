@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * EEE Fest 2026 - Wire Buzz Firebase Real-Time Database Sync Engine
- * Organized by IEEE PES DIU SBC
+ * Technically Supported by IEEE PES DIU SBC
  * 
  * Real-time Multi-Device Sync:
  * - Mobile QR Registrations (phone -> Firebase RTDB -> Arena Projector & Admin)

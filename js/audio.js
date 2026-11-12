@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * EEE Fest 2026 - Wire Buzz Procedural Audio Engine
- * Organized by IEEE PES DIU SBC
+ * Technically Supported by IEEE PES DIU SBC
  * 
  * Features:
  * - 100% Offline Procedural Web Audio API Synthesis

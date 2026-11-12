@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * EEE Fest 2026 - Admin Dashboard Controller
- * Organized by IEEE PES DIU SBC
+ * Technically Supported by IEEE PES DIU SBC
  * 
  * Functions:
  * - Real-time Queue Management (Reorder up/down, delete, manual walk-in, call to stage)

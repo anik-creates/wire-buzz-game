@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * EEE Fest 2026 - Mobile Player Registration & Live Contestant Hub
- * Organized by IEEE PES DIU SBC
+ * Technically Supported by IEEE PES DIU SBC
  * 
  * Features:
  * - Real-time Firebase Sync & Master Registrations Registry

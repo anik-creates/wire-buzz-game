@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * EEE Fest 2026 - Central State & Sync Controller
- * Organized by IEEE PES DIU SBC
+ * Technically Supported by IEEE PES DIU SBC
  * ============================================================================
  */
 
