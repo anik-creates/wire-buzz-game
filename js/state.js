@@ -125,6 +125,20 @@ class GameStateManager {
     }
     this.emit(type, payload);
     this.emit('state_changed', this.state);
+
+    if (window.firebaseSync) {
+      if (type.startsWith('TRIGGER_')) {
+        window.firebaseSync.sendRemoteEvent(type, payload);
+      } else if (type === 'MATCH_FINISHED' && payload && payload.record) {
+        window.firebaseSync.recordMatch(payload.record);
+      } else if (type === 'MATCH_RECORD_DELETED' && payload && payload.id) {
+        window.firebaseSync.deleteMatchRecord(payload.id);
+      } else if (type === 'MATCH_HISTORY_CLEARED') {
+        window.firebaseSync.clearMatchHistory();
+      } else if (type === 'QUEUE_UPDATED' || type === 'ACTIVE_PLAYER_CHANGED' || type === 'MODE_CHANGED') {
+        window.firebaseSync.syncCurrentQueue();
+      }
+    }
   }
 
   handleBroadcastMessage(msg) {

@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // DOM Elements - Analytics Summary
   const statTotalRegistered = document.getElementById('statTotalRegistered');
+  const statRegisteredSub = document.getElementById('statRegisteredSub');
   const statTotalPlayed = document.getElementById('statTotalPlayed');
   const statTotalVictories = document.getElementById('statTotalVictories');
   const statArenaRecord = document.getElementById('statArenaRecord');
@@ -223,7 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
     queue.forEach(p => uniqueIds.add(p.studentId));
     history.forEach(m => uniqueIds.add(m.studentId));
 
-    if (statTotalRegistered) statTotalRegistered.textContent = uniqueIds.size;
+    const totalCount = Math.max(uniqueIds.size, state.state.totalRegistrationsCount || 0);
+
+    if (statTotalRegistered) statTotalRegistered.textContent = totalCount;
+    if (statRegisteredSub) {
+      statRegisteredSub.textContent = `${queue.length} in queue • ${history.length} matches played`;
+    }
     if (statTotalPlayed) statTotalPlayed.textContent = history.length;
 
     const victories = history.filter(m => m.status === 'FINISHED');
@@ -401,6 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   state.on('MATCH_FINISHED', () => {
     renderReportsTable();
+    updateAnalyticsSummary();
+  });
+  state.on('REGISTRATIONS_UPDATED', () => {
     updateAnalyticsSummary();
   });
 

@@ -206,9 +206,167 @@ body.fest-body {
 
 .fest-stage-grid {
   display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 28px;
+  grid-template-columns: 290px 1fr 280px;
+  gap: 20px;
   flex: 1;
+}
+
+@media (max-width: 1250px) {
+  .fest-stage-grid {
+    grid-template-columns: 260px 1fr 260px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 980px) {
+  .fest-stage-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+/* Left Column: Permanent Live Top 10 Hall of Fame Rail */
+.fest-stage-left-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-right: 1px solid var(--border-subtle);
+  padding-right: 16px;
+  max-height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+.left-rail-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.left-rail-title-wrap .left-rail-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--fest-gold);
+  text-transform: uppercase;
+}
+
+.left-rail-title-wrap h3 {
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #fff;
+  margin-top: 2px;
+}
+
+.left-rail-filter-row {
+  display: flex;
+  gap: 6px;
+}
+
+.left-filter-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.left-filter-chip:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.left-filter-chip.active {
+  background: rgba(245, 166, 35, 0.15);
+  border-color: var(--fest-gold);
+  color: var(--fest-gold);
+}
+
+.left-leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.left-lb-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+}
+
+.left-lb-item:hover {
+  background: rgba(245, 166, 35, 0.05);
+  border-color: rgba(245, 166, 35, 0.2);
+}
+
+.left-lb-item.top-three {
+  border-color: rgba(245, 166, 35, 0.25);
+  background: rgba(245, 166, 35, 0.03);
+}
+
+.left-lb-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.left-lb-meta {
+  min-width: 0;
+}
+
+.left-lb-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.left-lb-id {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.left-lb-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.left-lb-score {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--fest-gold);
+  font-family: var(--font-mono);
+}
+
+.left-lb-outcome {
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.outcome-win {
+  color: var(--fest-green);
+}
+
+.outcome-ko {
+  color: #ff5252;
 }
 
 .fest-arena-core {
@@ -1856,4 +2014,91 @@ body.fest-body {
   color: var(--text-muted);
   letter-spacing: 0.05em;
   padding-top: 4px;
+}
+
+/* ==========================================================================
+   MOBILE CONTESTANT HUB & LIVE REAL-TIME LEADERBOARD
+   ========================================================================== */
+
+.ticket-sub-status {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--fest-gold);
+  margin-top: 6px;
+  letter-spacing: 0.02em;
+}
+
+.ticket-match-result {
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  margin-top: 12px;
+  padding-top: 6px;
+}
+
+.mobile-live-leaderboard-section {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+  width: 100%;
+}
+
+.mobile-leaderboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mobile-lb-title h3 {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+.mobile-filter-chips {
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-chip.active {
+  background: var(--fest-gold);
+  color: #000;
+  border-color: var(--fest-gold);
+}
+
+.mobile-leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mob-lb-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s;
+}
+
+.mob-lb-item.is-me-highlight {
+  border-color: var(--fest-gold);
+  background: rgba(245, 166, 35, 0.12);
+  box-shadow: 0 0 16px rgba(245, 166, 35, 0.25);
 }

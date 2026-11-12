@@ -40,6 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const topScorersTableBody = document.getElementById('topScorersTableBody');
   let topScorersCurrentMode = null; // null = all, 1 = mode 1, 2 = mode 2
 
+  // Left Sidebar Leaderboard Elements
+  const leftLeaderboardList = document.getElementById('leftLeaderboardList');
+  const leftTabAll = document.getElementById('leftTabAll');
+  const leftTabMode1 = document.getElementById('leftTabMode1');
+  const leftTabMode2 = document.getElementById('leftTabMode2');
+  let leftLeaderboardMode = null; // null = all, 1 = mode 1, 2 = mode 2
+
   const comStatusPill = document.getElementById('comStatusPill');
   const comStatusText = document.getElementById('comStatusText');
   const comStatusDot = document.getElementById('comStatusDot');
@@ -167,6 +174,77 @@ document.addEventListener('DOMContentLoaded', () => {
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // ========================== LEFT SIDEBAR TOP 10 ==========================
+
+  function renderLeftLeaderboard() {
+    if (!leftLeaderboardList || !state) return;
+    const list = state.getTopScorers(10, leftLeaderboardMode);
+
+    if (list.length === 0) {
+      leftLeaderboardList.innerHTML = `<div class="empty-queue-msg">No runs recorded yet.<br>Top 10 champions will appear here live!</div>`;
+      return;
+    }
+
+    leftLeaderboardList.innerHTML = list.map((m, idx) => {
+      const rank = idx + 1;
+      let badgeClass = "rank-other";
+      if (rank === 1) badgeClass = "rank-1";
+      else if (rank === 2) badgeClass = "rank-2";
+      else if (rank === 3) badgeClass = "rank-3";
+
+      const isWin = (m.status === 'FINISHED');
+      const timeStr = `${(m.elapsedMs / 1000).toFixed(2)}s`;
+      const scoreDisplay = (m.mode === 1) ? timeStr : `${m.score || 0} pts`;
+
+      return `
+        <div class="left-lb-item ${rank <= 3 ? 'top-three' : ''}">
+          <div class="left-lb-left">
+            <span class="top-rank-badge ${badgeClass}">${rank}</span>
+            <div class="left-lb-meta">
+              <div class="left-lb-name">${escapeHtml(m.playerName)}</div>
+              <div class="left-lb-id">${escapeHtml(m.studentId)} • M${m.mode}</div>
+            </div>
+          </div>
+          <div class="left-lb-right">
+            <div class="left-lb-score">${scoreDisplay}</div>
+            <div class="left-lb-outcome ${isWin ? 'outcome-win' : 'outcome-ko'}">
+              ${isWin ? '🏆 WIN' : '⛔ KO'}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  if (leftTabAll) {
+    leftTabAll.addEventListener('click', () => {
+      leftLeaderboardMode = null;
+      updateLeftTabs(leftTabAll);
+      renderLeftLeaderboard();
+    });
+  }
+  if (leftTabMode1) {
+    leftTabMode1.addEventListener('click', () => {
+      leftLeaderboardMode = 1;
+      updateLeftTabs(leftTabMode1);
+      renderLeftLeaderboard();
+    });
+  }
+  if (leftTabMode2) {
+    leftTabMode2.addEventListener('click', () => {
+      leftLeaderboardMode = 2;
+      updateLeftTabs(leftTabMode2);
+      renderLeftLeaderboard();
+    });
+  }
+
+  function updateLeftTabs(activeBtn) {
+    [leftTabAll, leftTabMode1, leftTabMode2].forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
+    if (activeBtn) activeBtn.classList.add('active');
   }
 
   // ========================== STOPWATCH CONTROLLER ==========================
@@ -777,6 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   state.on('MATCH_FINISHED', () => {
+    renderLeftLeaderboard();
     if (topScorersModal && topScorersModal.style.display === 'flex') {
       renderTopScorersModal();
     }
@@ -791,6 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderActivePlayer();
     renderMode();
     renderQueue();
+    renderLeftLeaderboard();
   });
 
   state.on('MODE_CHANGED', () => renderMode());
@@ -800,6 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderActivePlayer();
   renderMode();
   renderQueue();
+  renderLeftLeaderboard();
   formatTime(0);
 
   initQrCode();

@@ -66,34 +66,57 @@
       </div>
     </div>
 
-    <!-- Confirmation Ticket Stage -->
+    <!-- Confirmation Ticket & Live Contestant Hub Stage -->
     <div id="ticketSection" class="mobile-ticket-stage" style="display: none;">
-      <div class="ticket-status-ring">✓</div>
-      <h2 class="ticket-confirmed-headline">YOU ARE IN THE QUEUE!</h2>
+      <div class="ticket-status-ring" id="ticketStatusRing">✓</div>
+      <h2 class="ticket-confirmed-headline" id="ticketHeadline">YOU ARE IN THE QUEUE!</h2>
       
       <div class="ticket-number-display" id="ticketNumber">#1</div>
+      <div class="ticket-sub-status" id="ticketSubStatus">Waiting in Queue</div>
       
       <div class="ticket-player-card">
         <div class="ticket-name" id="ticketPlayerName">Contestant</div>
         <div class="ticket-id" id="ticketStudentId">231-15-0000</div>
+        <div class="ticket-match-result" id="ticketMatchResult" style="display: none;"></div>
       </div>
 
-      <p class="ticket-instructions">
+      <p class="ticket-instructions" id="ticketInstructions">
         Your registration is confirmed. Please watch the <strong>Wire Buzz projector screen</strong> in the main arena.<br>
-        Your name will be announced when you are called to grip the wand!
+        Your name will be called when it is your turn to grip the wand!
       </p>
 
       <button type="button" id="registerAnotherBtn" class="mobile-secondary-btn">
-        Register Another Player
+        + Register Another Player
       </button>
+
+      <!-- Live Real-Time Leaderboard Section on Phone -->
+      <div class="mobile-live-leaderboard-section">
+        <div class="mobile-leaderboard-header">
+          <div class="mobile-lb-title">
+            <span class="step-label-tag">REAL-TIME STANDINGS</span>
+            <h3>🏆 ARENA TOP LEADERBOARD</h3>
+          </div>
+          <div class="mobile-filter-chips">
+            <button type="button" class="mobile-chip active" id="mobFilterAll">All</button>
+            <button type="button" class="mobile-chip" id="mobFilterMode1">Mode 1</button>
+            <button type="button" class="mobile-chip" id="mobFilterMode2">Mode 2</button>
+          </div>
+        </div>
+
+        <div class="mobile-leaderboard-list" id="mobileLeaderboardList">
+          <!-- Dynamically populated from Firebase in real time -->
+        </div>
+      </div>
+
     </div>
 
   </div>
 
-  <!-- Real-Time Sync Scripts -->
-  <script src="js/mqtt.min.js"></script>
+  <!-- Firebase Realtime Database SDK (Official Google CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="js/state.js"></script>
-  <script src="js/sync.js"></script>
+  <script src="js/firebase-sync.js"></script>
   <script src="js/register.js"></script>
 </body>
 </html>
