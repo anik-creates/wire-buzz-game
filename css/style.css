@@ -2364,6 +2364,81 @@ body.fest-body {
   margin-top: 6px;
 }
 
+/* Fullscreen Navigation Button */
+.fullscreen-btn {
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: var(--fest-cyan);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: var(--fest-cyan);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+  transform: scale(1.04);
+}
+
+.fullscreen-btn.active-fullscreen {
+  background: rgba(245, 166, 35, 0.16);
+  border-color: var(--fest-gold);
+  color: var(--fest-gold);
+  box-shadow: 0 0 18px rgba(245, 166, 35, 0.4);
+}
+
+/* ==========================================================================
+   CENTER ARENA MIDDLE SECTION FOOTER LOGO (UNDER COUNTER)
+   ========================================================================== */
+
+.center-stage-partner-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  margin: 10px auto 14px auto;
+  max-width: 480px;
+  width: 92%;
+  background: radial-gradient(circle at center, rgba(245, 166, 35, 0.08) 0%, rgba(10, 12, 18, 0.6) 100%);
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 0 24px rgba(245, 166, 35, 0.12), inset 0 0 14px rgba(245, 166, 35, 0.04);
+  backdrop-filter: blur(8px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.center-stage-partner-strip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 32px rgba(245, 166, 35, 0.25);
+  border-color: rgba(245, 166, 35, 0.5);
+}
+
+.center-stage-partner-badge {
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--fest-gold);
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(245, 166, 35, 0.35);
+}
+
+.center-stage-partner-img {
+  max-width: 250px;
+  width: 78%;
+  height: auto;
+  max-height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(245, 166, 35, 0.35));
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.center-stage-partner-img:hover {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 20px rgba(245, 166, 35, 0.65));
+}
+
 /* ==========================================================================
    3D ANIMATED QR CHARACTER SCENE (BOY & GIRL WAVING & POINTING TO QR)
    ========================================================================== */
@@ -2371,7 +2446,7 @@ body.fest-body {
 .qr-3d-scene {
   margin-top: 14px;
   width: 100%;
-  max-width: 250px;
+  max-width: 260px;
   perspective: 750px;
   display: flex;
   flex-direction: column;
@@ -2424,7 +2499,7 @@ body.fest-body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   transform-style: preserve-3d;
   transition: transform 0.35s ease;
@@ -2436,8 +2511,8 @@ body.fest-body {
 
 .char-wrapper {
   position: relative;
-  width: 82px;
-  height: 98px;
+  width: 98px;
+  height: 118px;
   transform-style: preserve-3d;
 }
 
@@ -2451,22 +2526,24 @@ body.fest-body {
 }
 
 .boy-char .char-body-3d {
-  animation: boyBob 1.9s ease-in-out infinite alternate;
+  animation: boyBob 2.4s ease-in-out infinite alternate;
 }
 
 .girl-char .char-body-3d {
-  animation: girlBob 2.2s ease-in-out infinite alternate;
-  animation-delay: 0.35s;
+  animation: girlBob 2.6s ease-in-out infinite alternate;
+  animation-delay: 0.4s;
 }
 
 @keyframes boyBob {
-  0% { transform: translateY(0) rotate(-1deg); }
-  100% { transform: translateY(-4px) rotate(1deg); }
+  0% { transform: translateY(0) rotate(-0.5deg); }
+  50% { transform: translateY(-2px) rotate(0deg); }
+  100% { transform: translateY(-5px) rotate(0.8deg); }
 }
 
 @keyframes girlBob {
-  0% { transform: translateY(-3px) rotate(1deg); }
-  100% { transform: translateY(1px) rotate(-1deg); }
+  0% { transform: translateY(-4px) rotate(0.8deg); }
+  50% { transform: translateY(-1px) rotate(0deg); }
+  100% { transform: translateY(1px) rotate(-0.6deg); }
 }
 
 .char-shadow {
@@ -2474,44 +2551,58 @@ body.fest-body {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 54px;
-  height: 12px;
+  width: 64px;
+  height: 14px;
   background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.75) 0%, transparent 70%);
   border-radius: 50%;
   z-index: 0;
-  animation: shadowPulse 2s ease-in-out infinite alternate;
+  animation: shadowPulse 2.4s ease-in-out infinite alternate;
 }
 
 @keyframes shadowPulse {
-  0% { transform: translateX(-50%) scale(1); opacity: 0.8; }
+  0% { transform: translateX(-50%) scale(1); opacity: 0.85; }
   100% { transform: translateX(-50%) scale(0.82); opacity: 0.45; }
 }
 
 .char-svg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.55));
 }
 
-/* Waving & Pointing Arm Animations */
+/* Realistic Arm Kinematics & Natural Wave */
 .hand-wave-group {
-  transform-origin: 89px 34px;
-  animation: boyHandWave 0.75s ease-in-out infinite alternate;
+  transform-origin: 104px 34px;
+  animation: realisticBoyWave 1.1s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
 }
 
-@keyframes boyHandWave {
-  0% { transform: rotate(-18deg); }
-  100% { transform: rotate(24deg); }
+@keyframes realisticBoyWave {
+  0% { transform: rotate(-14deg); }
+  40% { transform: rotate(18deg); }
+  70% { transform: rotate(-8deg); }
+  100% { transform: rotate(26deg); }
 }
 
 .hand-wave-group-girl {
-  transform-origin: 11px 34px;
-  animation: girlHandWave 0.7s ease-in-out infinite alternate;
+  transform-origin: 16px 34px;
+  animation: realisticGirlWave 1.05s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
 }
 
-@keyframes girlHandWave {
-  0% { transform: rotate(18deg); }
-  100% { transform: rotate(-24deg); }
+@keyframes realisticGirlWave {
+  0% { transform: rotate(14deg); }
+  40% { transform: rotate(-18deg); }
+  70% { transform: rotate(8deg); }
+  100% { transform: rotate(-26deg); }
+}
+
+.char-eyes {
+  animation: realisticEyeBlink 4s infinite;
+  transform-origin: center;
+}
+
+@keyframes realisticEyeBlink {
+  0%, 96%, 100% { transform: scaleY(1); }
+  98% { transform: scaleY(0.08); }
 }
 
 .finger-sparkle {
@@ -2519,16 +2610,16 @@ body.fest-body {
 }
 
 @keyframes sparkleFlash {
-  0% { opacity: 0.3; transform: scale(0.7); }
-  100% { opacity: 1; transform: scale(1.3); }
+  0% { opacity: 0.35; transform: scale(0.75); }
+  100% { opacity: 1; transform: scale(1.35); }
 }
 
 .girl-ponytail {
-  transform-origin: 68px 30px;
-  animation: ponytailSwing 2.2s ease-in-out infinite alternate;
+  transform-origin: 78px 32px;
+  animation: naturalPonytail 2.6s ease-in-out infinite alternate;
 }
 
-@keyframes ponytailSwing {
-  0% { transform: rotate(-4deg); }
-  100% { transform: rotate(8deg); }
+@keyframes naturalPonytail {
+  0% { transform: rotate(-3deg); }
+  100% { transform: rotate(7deg); }
 }

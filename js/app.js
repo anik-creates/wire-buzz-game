@@ -52,6 +52,52 @@ document.addEventListener('DOMContentLoaded', () => {
   const comStatusDot = document.getElementById('comStatusDot');
   const clockEl = document.getElementById('liveClock');
 
+  // Fullscreen Presentation Controller
+  const fullscreenToggleBtn = document.getElementById('fullscreenToggleBtn');
+  const fullscreenIcon = document.getElementById('fullscreenIcon');
+  const fullscreenText = document.getElementById('fullscreenText');
+
+  function toggleTotalFullscreen() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(err => console.warn(err));
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(err => console.warn(err));
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+  }
+
+  function updateFullscreenUI() {
+    const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (fullscreenIcon) {
+      fullscreenIcon.textContent = isFull ? "🗗" : "⛶";
+    }
+    if (fullscreenText) {
+      fullscreenText.textContent = isFull ? "Exit Fullscreen" : "Full Screen";
+    }
+    if (fullscreenToggleBtn) {
+      if (isFull) {
+        fullscreenToggleBtn.classList.add('active-fullscreen');
+      } else {
+        fullscreenToggleBtn.classList.remove('active-fullscreen');
+      }
+    }
+  }
+
+  if (fullscreenToggleBtn) {
+    fullscreenToggleBtn.addEventListener('click', toggleTotalFullscreen);
+  }
+
+  document.addEventListener('fullscreenchange', updateFullscreenUI);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+
   // Confetti Canvas
   const confettiCanvas = document.getElementById('confettiCanvas');
   let confettiCtx = confettiCanvas ? confettiCanvas.getContext('2d') : null;
@@ -835,7 +881,10 @@ document.addEventListener('DOMContentLoaded', () => {
       hideTopScorersModal();
     } else if (e.code === 'KeyT') {
       handleTouchDetected(state.state.currentMatch.touches + 1);
-    } else if (e.code === 'KeyF') {
+    } else if (e.code === 'KeyF' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      toggleTotalFullscreen();
+    } else if (e.code === 'KeyV') {
       triggerVictory();
     } else if (e.code === 'KeyR') {
       resetStage();
